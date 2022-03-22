@@ -1,0 +1,8 @@
+menu-title: Настройки BrutalCargo
+cargo-title: 'BrutalWorld | Груз'
+
+not-player: Эту команду могут выполнять только игроки
+no-permissions: У вас нет права на это!
+
+time-message:
+  - 'В &e%worldе &fчерез &e%time &fна координатах &e%coordinates &Fпоявится груз'

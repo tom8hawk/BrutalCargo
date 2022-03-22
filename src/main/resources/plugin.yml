@@ -1,0 +1,9 @@
+name: BrutalCargo
+version: '${project.version}'
+main: ru.baronessdev.personal.brutalcargo.BrutalCargo
+api-version: 1.16
+depend: [ BrutalProtect ]
+
+commands:
+  cargo:
+    usage: /cargo
