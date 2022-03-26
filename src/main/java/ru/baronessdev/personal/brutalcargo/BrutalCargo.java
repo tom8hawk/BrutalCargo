@@ -15,7 +15,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import ru.baronessdev.personal.brutalcargo.config.Config;
 import ru.baronessdev.personal.brutalcargo.config.Database;
 import ru.baronessdev.personal.brutalcargo.config.Messages;
-import ru.baronessdev.personal.brutalprotect.utils.Holographic;
 
 import java.util.HashMap;
 import java.util.concurrent.ExecutionException;

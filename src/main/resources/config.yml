@@ -1,10 +1,12 @@
 world:
   name: Мир
+  min-cords: 30 30 # x z
   cooldown: 120 # Раз в это время будет заспавнен груз. В минутах
   ignored-worlds:
     - hub
 world_the_end:
   name: Хаб
+  min-cords: 30 30
   cooldown: 65
   ignored-worlds:
     - world_nether

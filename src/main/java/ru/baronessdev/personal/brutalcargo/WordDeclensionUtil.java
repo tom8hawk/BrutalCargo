@@ -1,12 +1,9 @@
 package ru.baronessdev.personal.brutalcargo;
 
-import lombok.Getter;
-
 public enum WordDeclensionUtil {
     MINUTES(new String[] { "минуту", "минуты", "минут" }),
     SECONDS(new String[] { "секунду", "секунды", "секунд" });
 
-    @Getter
     private final String[] declensions;
 
     WordDeclensionUtil(String[] declensions) {
@@ -18,7 +15,7 @@ public enum WordDeclensionUtil {
     * один-два-пять - один гвоздь, два гвоздя, пять гвоздей.
 
     * @param number Число, по которому идёт склонение.
-    * @return Cтрока (число + существительное в нужном падеже).
+    * @return Число + существительное в нужном падеже.
     */
     public String getWordInDeclension(long number) {
         String str = number + " ";
