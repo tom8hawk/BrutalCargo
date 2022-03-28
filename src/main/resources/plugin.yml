@@ -1,6 +1,6 @@
 name: BrutalCargo
 version: '${project.version}'
-main: ru.baronessdev.personal.brutalcargo.BrutalCargo
+main: ru.baronessdev.personal.brutalcargo.Main
 api-version: 1.16
 depend: [ BrutalProtect ]
 

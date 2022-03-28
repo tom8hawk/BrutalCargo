@@ -5,7 +5,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
-import ru.baronessdev.personal.brutalcargo.BrutalCargo;
+import ru.baronessdev.personal.brutalcargo.Main;
 
 import java.io.*;
 import java.util.concurrent.CompletableFuture;
@@ -14,10 +14,10 @@ public class Database {
     private static String data;
 
     public Database() {
-        File file = new File(BrutalCargo.inst.getDataFolder() + "/data.dat");
+        File file = new File(Main.inst.getDataFolder() + "/data.dat");
 
         if (!file.exists())
-            BrutalCargo.inst.saveResource("data.dat", false);
+            Main.inst.saveResource("data.dat", false);
 
         data = file.getAbsolutePath();
     }

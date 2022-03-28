@@ -5,28 +5,26 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.ShulkerBox;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BlockStateMeta;
 import ru.baronessdev.personal.brutalcargo.config.Config;
 import ru.baronessdev.personal.brutalcargo.config.Database;
 import ru.baronessdev.personal.brutalcargo.config.Messages;
+import ru.baronessdev.personal.brutalcargo.installation.CargoManager;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static ru.baronessdev.personal.brutalcargo.BrutalCargo.executor;
+import static ru.baronessdev.personal.brutalcargo.Main.executor;
 
-public class Cargo {
+public class CargoCreator {
     private static final Random random = new Random();
 
     public static void schedule() {
@@ -37,7 +35,7 @@ public class Cargo {
             if (!queue.isEmpty()) {
                 while (true) {
                     Collections.shuffle(queue);
-                    Cargo.spawn(queue.get(0)).join();
+                    CargoCreator.spawn(queue.get(0)).join();
                 }
             }
         });
@@ -75,19 +73,20 @@ public class Cargo {
             Location loc = temp.clone();
             loc.setY(highest);
 
-            RegionManager.create(loc); // Создаём приват
+            CargoManager cargoManager = new CargoManager(loc);
+            cargoManager.createRegion(); // Создаём приват
             List<Location> substrate = Cuboid.getArea(loc, 4); // Создаём подложку
 
             substrate.parallelStream() // Ставим рандомные блоки
                     .map(l -> (Runnable) () -> l.getBlock().setType(Material.NETHERRACK))
-                    .forEach(run -> Bukkit.getScheduler().runTask(BrutalCargo.inst, run));
+                    .forEach(run -> Bukkit.getScheduler().runTask(Main.inst, run));
 
             substrate.parallelStream() // Убираем рандомные блоки
                     .map(l -> (Runnable) () -> l.getBlock().setType(Material.AIR, true))
                     .filter(run -> (random.nextInt(100) + 1) <= 5)
-                    .forEach(run -> Bukkit.getScheduler().runTask(BrutalCargo.inst, run));
+                    .forEach(run -> Bukkit.getScheduler().runTask(Main.inst, run));
 
-            Bukkit.getScheduler().runTask(BrutalCargo.inst, () -> loc.getBlock().setType(Material.RESPAWN_ANCHOR)); // Ставим на локацию якорь возрождения
+            Bukkit.getScheduler().runTask(Main.inst, () -> loc.getBlock().setType(Material.RESPAWN_ANCHOR)); // Ставим на локацию якорь возрождения
 
             List<String> message = Messages.inst.getList("time-message"); // Получаем сообщение
             String coordinates = loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ(); // Преобразуем X Y Z координаты в строку
@@ -115,7 +114,7 @@ public class Cargo {
                         .forEach(line -> players.parallelStream().forEach(player -> player.sendMessage(line)));
             }));
 
-            laterTask(1, TimeUnit.SECONDS, () -> Bukkit.getScheduler().runTask(BrutalCargo.inst, () -> { // Выводим в главный поток (это требует API)
+            laterTask(1, TimeUnit.SECONDS, () -> Bukkit.getScheduler().runTask(Main.inst, () -> { // Выводим в главный поток (это требует API)
                 for (int i = 0; i < 2; i++)
                     loc.getWorld().createExplosion(loc, 6F, false, false); // Создаём 2 взрыва
 
@@ -166,7 +165,7 @@ public class Cargo {
             Thread.sleep(unit.toMillis(time));
         } catch (InterruptedException ignored) { }
 
-        Bukkit.getScheduler().runTask(BrutalCargo.inst, task);
+        Bukkit.getScheduler().runTask(Main.inst, task);
     }
 
     public static class Cuboid {

@@ -1,12 +1,12 @@
 package ru.baronessdev.personal.brutalcargo.config;
 
 import org.bukkit.configuration.file.YamlConfiguration;
-import ru.baronessdev.personal.brutalcargo.BrutalCargo;
+import ru.baronessdev.personal.brutalcargo.Main;
 
 import java.io.File;
 
 public abstract class YAML {
-    protected static final BrutalCargo plugin = BrutalCargo.inst;
+    protected static final Main plugin = Main.inst;
     protected final YamlConfiguration configuration = new YamlConfiguration();
     protected File file;
 

@@ -15,18 +15,20 @@ import org.bukkit.plugin.java.JavaPlugin;
 import ru.baronessdev.personal.brutalcargo.config.Config;
 import ru.baronessdev.personal.brutalcargo.config.Database;
 import ru.baronessdev.personal.brutalcargo.config.Messages;
+import ru.baronessdev.personal.brutalcargo.installation.CargoManager;
+import ru.baronessdev.personal.brutalcargo.installation.RegionManager;
 
 import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public final class BrutalCargo extends JavaPlugin {
+public final class Main extends JavaPlugin {
     public static HashMap<HumanEntity, InventoryView> views = new HashMap<>();
     public static ExecutorService executor = Executors.newCachedThreadPool();
-    public static BrutalCargo inst;
+    public static Main inst;
 
-    public BrutalCargo() {
+    public Main() {
         inst = this;
     }
 
@@ -71,7 +73,7 @@ public final class BrutalCargo extends JavaPlugin {
 
                     views.remove(e.getPlayer());
                 } else if (e.getInventory().getLocation() != null && e.getInventory().isEmpty()) {
-                    RegionManager.getByLocation(e.getInventory().getLocation()).ifPresent(rg -> {
+                    CargoManager.getByLocation(e.getInventory().getLocation()).ifPresent(rg -> {
                         e.getInventory().getLocation().getBlock().setType(Material.AIR);
 
                         rg.delete();
@@ -81,21 +83,21 @@ public final class BrutalCargo extends JavaPlugin {
 
             @EventHandler
             public void onBreak(BlockBreakEvent e) {
-                RegionManager.getByLocation(e.getBlock().getLocation()).ifPresent(rg -> e.setCancelled(true));
+//                RegionManager.getByLocation(e.getBlock().getLocation()).ifPresent(rg -> e.setCancelled(true));
             }
 
             @EventHandler
             public void onJoin(PlayerJoinEvent e) {
-                Bukkit.getScheduler().runTaskLater(BrutalCargo.inst, () -> RegionManager.addToAll(e.getPlayer()), 5L);
+                Bukkit.getScheduler().runTaskLater(Main.inst, () -> RegionManager.addToAll(e.getPlayer()), 5L);
             }
         }, this);
 
-       Cargo.schedule();
+       CargoCreator.schedule();
     }
 
     @Override
     public void onDisable() {
-        RegionManager.getRegions().forEach(rg -> {
+        CargoManager.getCargos().forEach(rg -> {
             rg.getLocation().getBlock().setType(Material.AIR);
 
             rg.delete();
