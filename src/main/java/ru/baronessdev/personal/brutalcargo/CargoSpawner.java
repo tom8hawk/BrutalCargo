@@ -23,8 +23,9 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static ru.baronessdev.personal.brutalcargo.Main.executor;
+import static ru.baronessdev.personal.brutalcargo.Main.getPlayers;
 
-public class CargoCreator {
+public class CargoSpawner {
     private static final Random random = new Random();
 
     public static void schedule() {
@@ -35,7 +36,7 @@ public class CargoCreator {
             if (!queue.isEmpty()) {
                 while (true) {
                     Collections.shuffle(queue);
-                    CargoCreator.spawn(queue.get(0)).join();
+                    CargoSpawner.spawn(queue.get(0)).join();
                 }
             }
         });
@@ -119,37 +120,10 @@ public class CargoCreator {
                     loc.getWorld().createExplosion(loc, 6F, false, false); // Создаём 2 взрыва
 
                 loc.getBlock().setType(Material.RED_SHULKER_BOX); // Заменяем блок на шалкер
-                BlockStateMeta bsm = (BlockStateMeta) new ItemStack(Material.RED_SHULKER_BOX).getItemMeta();
-                
-                ShulkerBox box = (ShulkerBox) bsm.getBlockState();
-                box.setCustomName(Messages.inst.getMessage("cargo-title"));
-
-                Database.readInventory()
-                        .thenApplyAsync(res -> getRandomItems(res.getContents()))
-                        .thenAccept(box.getInventory()::setContents);
-
-                bsm.setBlockState(box);
-                box.update();
-
-                loc.getBlock().getState().setBlockData(bsm.getBlockState().getBlockData());
             }));
+
+            cargoManager.createContent(ignoredWorlds);
         });
-    }
-
-    private static ItemStack[] getRandomItems(ItemStack[] elements) {
-        List<ItemStack> returnList = Arrays.stream(elements).collect(Collectors.toList());
-        Collections.shuffle(returnList);
-
-        if (returnList.size() > 27)
-            return returnList.subList(returnList.size() - 27, returnList.size()).toArray(ItemStack[]::new);
-
-        return returnList.toArray(ItemStack[]::new);
-    }
-
-    private static List<Player> getPlayers(List<String> ignoredWorlds) {
-        return Bukkit.getOnlinePlayers().parallelStream()
-                .filter(p -> !ignoredWorlds.contains(p.getLocation().getWorld().getName()))
-                .collect(Collectors.toList());
     }
 
     private static void laterTaskAsync(long time, TimeUnit unit, Runnable task) {

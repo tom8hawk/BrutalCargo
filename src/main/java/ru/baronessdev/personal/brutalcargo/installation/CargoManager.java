@@ -19,8 +19,9 @@ public class CargoManager {
         this.location = location;
     }
 
-    public void createContent() {
-
+    public void createContent(List<String> ignoredWorlds) {
+        content = new ContentManager(this, location);
+        content.create(ignoredWorlds);
     }
 
     public void createRegion() {
