@@ -17,6 +17,8 @@ public class CargoManager {
 
     public CargoManager(Location location) {
         this.location = location;
+
+        cargos.add(this);
     }
 
     public void createContent(List<String> ignoredWorlds) {

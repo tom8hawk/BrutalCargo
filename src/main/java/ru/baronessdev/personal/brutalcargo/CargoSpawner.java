@@ -6,12 +6,8 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.BlockFace;
-import org.bukkit.block.ShulkerBox;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.BlockStateMeta;
 import ru.baronessdev.personal.brutalcargo.config.Config;
-import ru.baronessdev.personal.brutalcargo.config.Database;
 import ru.baronessdev.personal.brutalcargo.config.Messages;
 import ru.baronessdev.personal.brutalcargo.installation.CargoManager;
 
@@ -67,7 +63,7 @@ public class CargoSpawner {
                         random.ints(mins.get(1), border).findFirst().orElse(random.nextInt(border))); // Получаем рандомные координаты
                 highest = temp.getWorld().getHighestBlockAt(temp).getY(); // Получаем высоту первого нормального блока на этих координатах
 
-                if (highest > 10 && Cuboid.getArea(temp, 60).parallelStream().noneMatch(l -> ru.baronessdev.personal.brutalprotect.region.Region.getByLocation(l) != null))
+                if (highest > 10 && Cuboid.getArea(temp, 60).parallelStream().noneMatch(l -> ru.baronessdev.personal.brutalprotect.region.Region.getByLocation(l).isPresent()))
                     break;
             }
 
@@ -84,7 +80,7 @@ public class CargoSpawner {
 
             substrate.parallelStream() // Убираем рандомные блоки
                     .map(l -> (Runnable) () -> l.getBlock().setType(Material.AIR, true))
-                    .filter(run -> (random.nextInt(100) + 1) <= 5)
+                    .filter(run -> (random.nextInt(100) + 1) <= 15)
                     .forEach(run -> Bukkit.getScheduler().runTask(Main.inst, run));
 
             Bukkit.getScheduler().runTask(Main.inst, () -> loc.getBlock().setType(Material.RESPAWN_ANCHOR)); // Ставим на локацию якорь возрождения

@@ -51,7 +51,9 @@ public class Database {
 
                     if (object != null)
                         inventory.setContents((ItemStack[]) object);
-                } catch (EOFException ignored) { }
+                } catch (EOFException ignored) {
+                    throw new RuntimeException("Вы не задали возможное содержимое груза или настроили неправильно!");
+                }
 
                 dataInput.close();
                 inputStream.close();

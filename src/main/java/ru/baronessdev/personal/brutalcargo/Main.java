@@ -10,6 +10,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -21,6 +22,7 @@ import ru.baronessdev.personal.brutalcargo.installation.RegionManager;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -49,20 +51,27 @@ public final class Main extends JavaPlugin {
         getCommand("cargo").setExecutor((CommandSender sender, org.bukkit.command.Command command, String label, String[] args) -> {
             if (sender instanceof Player) {
                 if (sender.hasPermission("cargo.admin")) {
-                    Player player = (Player) sender;
+                    if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
+                        new Config();
+                        new Messages();
+                        new Database();
 
-                    Database.readInventory()
-                            .thenApplyAsync(inv -> {
-                                try {
-                                    return Bukkit.getScheduler().callSyncMethod(this, () -> player.openInventory(inv)).get();
-                                } catch (InterruptedException | ExecutionException e) {
-                                    e.printStackTrace();
-                                }
+                        sender.sendMessage(Messages.inst.getMessage("reload"));
+                    } else {
+                        Player player = (Player) sender;
 
-                                return null;
-                            })
-                            .thenAcceptAsync(view -> views.put(view.getPlayer(), view));
+                        Database.readInventory()
+                                .thenApplyAsync(inv -> {
+                                    try {
+                                        return Bukkit.getScheduler().callSyncMethod(this, () -> player.openInventory(inv)).get();
+                                    } catch (InterruptedException | ExecutionException e) {
+                                        e.printStackTrace();
+                                    }
 
+                                    return null;
+                                })
+                                .thenAcceptAsync(view -> views.put(view.getPlayer(), view));
+                    }
                 } else {
                     sender.sendMessage(Messages.inst.getMessage("no-permissions"));
                 }
@@ -91,7 +100,18 @@ public final class Main extends JavaPlugin {
 
             @EventHandler
             public void onBreak(BlockBreakEvent e) {
-//                RegionManager.getByLocation(e.getBlock().getLocation()).ifPresent(rg -> e.setCancelled(true));
+                CargoManager.getByLocation(e.getBlock().getLocation()).ifPresent(rg -> e.setCancelled(true));
+            }
+
+            @EventHandler
+            public void onInteract(PlayerInteractEvent e) {
+                if (e.hasBlock())
+                    CargoManager.getByLocation(e.getClickedBlock().getLocation())
+                            .map(CargoManager::getContent)
+                            .ifPresent(cargo -> {
+                                e.setCancelled(true);
+                                cargo.open(e.getPlayer());
+                            });
             }
 
             @EventHandler

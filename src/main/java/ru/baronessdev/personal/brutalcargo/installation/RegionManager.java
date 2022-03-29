@@ -44,16 +44,12 @@ public class RegionManager {
             Selection selection = new Selection();
             selection.setBlock(loc, 60);
 
-            while (!selection.isShutdowned()) ;
+            while (!selection.isShutdowned());
 
-            setRegion(Region.getByLocation(loc));
+            setRegion(Region.getByLocation(loc).get());
             Holographic.delete(region);
 
-            Bukkit.getOnlinePlayers().parallelStream()
-                    .forEach(p -> CargoManager.getCargos().parallelStream()
-                            .map(CargoManager::getRegionManager)
-                            .map(RegionManager::getRegion)
-                            .forEach(rg -> rg.addMember(p)));
+            Bukkit.getOnlinePlayers().parallelStream().forEach(RegionManager::addToAll);
         });
     }
 

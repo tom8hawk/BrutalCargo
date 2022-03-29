@@ -1,7 +1,6 @@
 package ru.baronessdev.personal.brutalcargo.installation;
 
 import fr.minuskube.inv.ClickableItem;
-import fr.minuskube.inv.InventoryManager;
 import fr.minuskube.inv.SmartInventory;
 import fr.minuskube.inv.content.InventoryContents;
 import fr.minuskube.inv.content.InventoryProvider;
@@ -9,6 +8,7 @@ import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
@@ -43,17 +43,19 @@ public class ContentManager implements InventoryProvider {
 
     public void create(List<String> ignoredWorlds) {
         executor.execute(() -> {
+            String cargoTitle = Messages.inst.getMessage("cargo-title");
+
             inventory = SmartInventory.builder()
                     .provider(this)
                     .manager(Main.inventoryManager)
                     .size(4, 9)
-                    .title(Messages.inst.getMessage("cargo-title"))
+                    .title(cargoTitle)
                     .build();
 
             HashSet<Player> players = new HashSet<>();
 
             executor.execute(() -> {
-                content = Bukkit.createInventory(null, 27);
+                content = Bukkit.createInventory(null, 27, cargoTitle);
 
                 Database.readInventory()
                         .thenApplyAsync(res -> getRandomItems(res.getContents()))
@@ -61,12 +63,13 @@ public class ContentManager implements InventoryProvider {
             });
 
             while (secs > 0) {
+                players.removeIf(p -> !p.isOnline() || Main.inventoryManager.getInventory(p).isEmpty());
+
                 players.addAll(Bukkit.getOnlinePlayers().parallelStream()
                         .filter(p -> Main.inventoryManager.getInventory(p).isPresent())
                         .collect(Collectors.toList()));
 
                 if (!players.isEmpty()) {
-                    players.removeIf(Predicate.not(Player::isOnline));
                     opener = (Player) players.toArray()[0];
 
                     secs--;
@@ -83,10 +86,23 @@ public class ContentManager implements InventoryProvider {
             Bukkit.getScheduler().runTask(Main.inst, () -> players.forEach(this::open));
 
             executor.execute(() -> {
-                while (!content.isEmpty());
+                while (true) {
+                    if (content.isEmpty()) {
+                        Bukkit.getScheduler().runTask(Main.inst, () -> {
+                            location.getBlock().setType(Material.AIR);
+                            content.getViewers().forEach(HumanEntity::closeInventory);
+                        });
 
-                Bukkit.getScheduler().runTask(Main.inst, () -> location.getBlock().setType(Material.AIR));
-                cargo.delete();
+                        cargo.delete();
+                        return;
+                    }
+
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
             });
 
             String openMessage = Messages.inst.getMessage("open-message")
@@ -117,12 +133,12 @@ public class ContentManager implements InventoryProvider {
 
     @Override
     public void init(Player player, InventoryContents inventoryContents) {
-        executor.execute(() -> inventoryContents.fillBorders(ClickableItem.empty(getItem())));
+        inventoryContents.fillBorders(ClickableItem.empty(getItem()));
     }
 
     @Override
     public void update(Player player, InventoryContents inventoryContents) {
-        executor.execute(() -> inventoryContents.fillBorders(ClickableItem.empty(getItem())));
+        inventoryContents.fillBorders(ClickableItem.empty(getItem()));
     }
 
     public ItemStack getItem() {
