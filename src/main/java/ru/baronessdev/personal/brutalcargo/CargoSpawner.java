@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static org.bukkit.Bukkit.getServer;
 import static ru.baronessdev.personal.brutalcargo.Main.executor;
 import static ru.baronessdev.personal.brutalcargo.Main.getPlayers;
 
@@ -26,7 +27,7 @@ public class CargoSpawner {
 
     public static void schedule() {
         List<World> queue = new ArrayList<>();
-        Config.inst.getKeys().parallelStream().map(Bukkit::getWorld).forEach(queue::add);
+        Config.inst.getKeys().parallelStream().map(getServer()::getWorld).forEach(queue::add);
 
         executor.execute(() -> {
             if (!queue.isEmpty()) {
