@@ -117,8 +117,8 @@ public class ContentManager implements InventoryProvider {
         List<ItemStack> returnList = Arrays.stream(elements).collect(Collectors.toList());
         Collections.shuffle(returnList);
 
-        if (returnList.size() > 27)
-            return returnList.subList(returnList.size() - 27, returnList.size()).toArray(ItemStack[]::new);
+        if (returnList.size() > 6)
+            return returnList.subList(returnList.size() - 6, returnList.size()).toArray(ItemStack[]::new);
 
         return returnList.toArray(ItemStack[]::new);
     }
