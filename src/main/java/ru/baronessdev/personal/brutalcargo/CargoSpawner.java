@@ -26,29 +26,57 @@ public class CargoSpawner {
     private static final Random random = new Random();
 
     public static void schedule() {
-        List<World> queue = new ArrayList<>();
-        Config.inst.getKeys().parallelStream().map(getServer()::getWorld).forEach(queue::add);
-
         executor.execute(() -> {
+            List<World> queue = new ArrayList<>();
+
+            List<String> configWorlds = Config.inst.getKeys().stream()
+                    .map(String::toLowerCase)
+                    .collect(Collectors.toList());
+
+            Bukkit.getWorlds().parallelStream()
+                    .filter(world -> configWorlds.contains(world.getName().toLowerCase()))
+                    .forEach(queue::add);
+
             if (!queue.isEmpty()) {
                 while (true) {
                     Collections.shuffle(queue);
-                    CargoSpawner.spawn(queue.get(0)).join();
+
+                    World world = queue.get(0);
+                    List<String> ignoredWorlds = Config.inst.getList(world.getName() + ".ignored-worlds");
+
+                    int time = Config.inst.getInt(world.getName() + ".cooldown");
+                    long hours = TimeUnit.MINUTES.toHours(time);
+
+                    while (hours > 0) {
+                        try {
+                            Thread.sleep(3600000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+
+                        String message = Messages.inst.getMessage("left-time-message")
+                                .replace("%time", WordDeclensionUtil.HOURS.getWordInDeclension(hours));
+
+                        getPlayers(ignoredWorlds).parallelStream().forEach(p -> p.sendMessage(message));
+                        hours -= 1;
+                    }
+
+                    try {
+                        Thread.sleep(3600000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                    CargoSpawner.spawn(world).join();
                 }
             }
         });
     }
 
-    private static CompletableFuture<Void> spawn(World world) {
+    public static CompletableFuture<Void> spawn(World world) {
         return CompletableFuture.runAsync(() -> {
             String worldName = world.getName();
             String cargoName = Config.inst.getMessage(worldName + ".name");
-
-            try { // Ожидаем кд
-                Thread.sleep(TimeUnit.MINUTES.toMillis(Config.inst.getInt(worldName + ".cooldown")));
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
 
             int highest;
             Location temp;

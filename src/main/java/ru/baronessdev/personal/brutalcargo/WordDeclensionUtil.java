@@ -1,6 +1,7 @@
 package ru.baronessdev.personal.brutalcargo;
 
 public enum WordDeclensionUtil {
+    HOURS(new String[] { "час", "часа", "часов" }),
     MINUTES(new String[] { "минуту", "минуты", "минут" }),
     SECONDS(new String[] { "секунду", "секунды", "секунд" });
 

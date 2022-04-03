@@ -3,6 +3,7 @@ package ru.baronessdev.personal.brutalcargo;
 import fr.minuskube.inv.InventoryManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
@@ -22,7 +23,6 @@ import ru.baronessdev.personal.brutalcargo.installation.RegionManager;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -49,34 +49,41 @@ public final class Main extends JavaPlugin {
         inventoryManager.init();
 
         getCommand("cargo").setExecutor((CommandSender sender, org.bukkit.command.Command command, String label, String[] args) -> {
-            if (sender instanceof Player) {
+            if (args.length >= 1) {
                 if (sender.hasPermission("cargo.admin")) {
-                    if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
+                    if (args[0].equalsIgnoreCase("reload")) {
                         new Config();
                         new Messages();
                         new Database();
 
                         sender.sendMessage(Messages.inst.getMessage("reload"));
-                    } else {
-                        Player player = (Player) sender;
+                    } else if (args[0].equalsIgnoreCase("spawn")) {
+                        if (sender instanceof Player) {
+                            Player player = (Player) sender;
 
-                        Database.readInventory()
-                                .thenApplyAsync(inv -> {
-                                    try {
-                                        return Bukkit.getScheduler().callSyncMethod(this, () -> player.openInventory(inv)).get();
-                                    } catch (InterruptedException | ExecutionException e) {
-                                        e.printStackTrace();
-                                    }
+                            CargoSpawner.spawn(player.getWorld());
+                        } else if (args.length > 1) {
+                            World world = getServer().getWorld(args[1]);
 
-                                    return null;
-                                })
-                                .thenAcceptAsync(view -> views.put(view.getPlayer(), view));
+                            if (world != null)
+                                CargoSpawner.spawn(world);
+                        }
                     }
-                } else {
-                    sender.sendMessage(Messages.inst.getMessage("no-permissions"));
                 }
-            } else {
-                sender.sendMessage(Messages.inst.getMessage("not-player"));
+            } else if (sender instanceof Player) {
+                Player player = (Player) sender;
+
+                Database.readInventory()
+                        .thenApplyAsync(inv -> {
+                            try {
+                                return Bukkit.getScheduler().callSyncMethod(this, () -> player.openInventory(inv)).get();
+                            } catch (InterruptedException | ExecutionException e) {
+                                e.printStackTrace();
+                            }
+
+                            return null;
+                        })
+                        .thenAcceptAsync(view -> views.put(view.getPlayer(), view));
             }
 
             return true;
