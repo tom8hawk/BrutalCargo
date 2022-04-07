@@ -1,6 +1,7 @@
 package ru.baronessdev.personal.brutalcargo.installation;
 
 import fr.minuskube.inv.ClickableItem;
+import fr.minuskube.inv.InventoryListener;
 import fr.minuskube.inv.SmartInventory;
 import fr.minuskube.inv.content.InventoryContents;
 import fr.minuskube.inv.content.InventoryProvider;
@@ -10,6 +11,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -19,21 +21,20 @@ import ru.baronessdev.personal.brutalcargo.config.Database;
 import ru.baronessdev.personal.brutalcargo.config.Messages;
 
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static ru.baronessdev.personal.brutalcargo.Main.executor;
 import static ru.baronessdev.personal.brutalcargo.Main.getPlayers;
 
 public class ContentManager implements InventoryProvider {
+    private final LinkedList<Player> openers = new LinkedList<>();
+    
     @Getter private final CargoManager cargo;
     @Getter private final Location location;
 
     private Inventory content;
     private SmartInventory inventory;
     private int secs = 30;
-
-    private Player opener;
     private boolean opened;
 
     public ContentManager(CargoManager cargo, Location location) {
@@ -48,11 +49,10 @@ public class ContentManager implements InventoryProvider {
             inventory = SmartInventory.builder()
                     .provider(this)
                     .manager(Main.inventoryManager)
-                    .size(4, 9)
+                    .size(3, 9)
                     .title(cargoTitle)
+                    .listener(new InventoryListener(InventoryCloseEvent.class, o -> openers.remove((Player) ((InventoryCloseEvent) o).getPlayer())))
                     .build();
-
-            HashSet<Player> players = new HashSet<>();
 
             executor.execute(() -> {
                 content = Bukkit.createInventory(null, 27, cargoTitle);
@@ -63,17 +63,8 @@ public class ContentManager implements InventoryProvider {
             });
 
             while (secs > 0) {
-                players.removeIf(p -> !p.isOnline() || Main.inventoryManager.getInventory(p).isEmpty());
-
-                players.addAll(Bukkit.getOnlinePlayers().parallelStream()
-                        .filter(p -> Main.inventoryManager.getInventory(p).isPresent())
-                        .collect(Collectors.toList()));
-
-                if (!players.isEmpty()) {
-                    opener = (Player) players.toArray()[0];
-
+                if (!openers.isEmpty())
                     secs--;
-                }
 
                 try {
                     Thread.sleep(1000);
@@ -81,9 +72,10 @@ public class ContentManager implements InventoryProvider {
                     throw new RuntimeException(e);
                 }
             }
-
+            
             opened = true;
-            Bukkit.getScheduler().runTask(Main.inst, () -> players.forEach(this::open));
+            Player opener = openers.getFirst();
+            Bukkit.getScheduler().runTask(Main.inst, () -> openers.forEach(this::open));
 
             executor.execute(() -> {
                 while (true) {
@@ -118,9 +110,31 @@ public class ContentManager implements InventoryProvider {
         Collections.shuffle(returnList);
 
         if (returnList.size() > 6)
-            return returnList.subList(returnList.size() - 6, returnList.size()).toArray(ItemStack[]::new);
+            return randomise(returnList.subList(returnList.size() - 6, returnList.size()));
 
-        return returnList.toArray(ItemStack[]::new);
+        return randomise(returnList);
+    }
+
+    private static ItemStack[] randomise(List<ItemStack> elements) {
+        List<ItemStack> contents = new ArrayList<>(Collections.nCopies(27, new ItemStack(Material.AIR)));
+
+        List<Integer> results = new ArrayList<>();
+        Random random = new Random();
+
+        elements.forEach(item -> {
+            while (true) {
+                int loc = random.nextInt(27);
+
+                if (!results.contains(loc)) {
+                    contents.set(loc, item);
+
+                    results.add(loc);
+                    return;
+                }
+            }
+        });
+
+        return contents.toArray(ItemStack[]::new);
     }
 
     public void open(Player player) {
@@ -128,17 +142,18 @@ public class ContentManager implements InventoryProvider {
             player.openInventory(content);
         } else {
             inventory.open(player);
+            openers.add(player);
         }
     }
 
     @Override
     public void init(Player player, InventoryContents inventoryContents) {
-        inventoryContents.fillBorders(ClickableItem.empty(getItem()));
+        inventoryContents.fill(ClickableItem.empty(getItem()));
     }
 
     @Override
     public void update(Player player, InventoryContents inventoryContents) {
-        inventoryContents.fillBorders(ClickableItem.empty(getItem()));
+        inventoryContents.fill(ClickableItem.empty(getItem()));
     }
 
     public ItemStack getItem() {

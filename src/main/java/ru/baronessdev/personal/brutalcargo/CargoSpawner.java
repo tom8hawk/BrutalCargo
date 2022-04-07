@@ -1,6 +1,5 @@
 package ru.baronessdev.personal.brutalcargo;
 
-import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -18,7 +17,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.bukkit.Bukkit.getServer;
 import static ru.baronessdev.personal.brutalcargo.Main.executor;
 import static ru.baronessdev.personal.brutalcargo.Main.getPlayers;
 
@@ -92,7 +90,7 @@ public class CargoSpawner {
                         random.ints(mins.get(1), border).findFirst().orElse(random.nextInt(border))); // Получаем рандомные координаты
                 highest = temp.getWorld().getHighestBlockAt(temp).getY(); // Получаем высоту первого нормального блока на этих координатах
 
-                if (highest > 10 && Cuboid.getArea(temp, 60).parallelStream().noneMatch(l -> ru.baronessdev.personal.brutalprotect.region.Region.getByLocation(l).isPresent()))
+                if (highest > 10 && getArea(temp, 60).parallelStream().noneMatch(l -> ru.baronessdev.personal.brutalprotect.region.Region.getByLocation(l).isPresent()))
                     break;
             }
 
@@ -101,16 +99,17 @@ public class CargoSpawner {
 
             CargoManager cargoManager = new CargoManager(loc);
             cargoManager.createRegion(); // Создаём приват
-            List<Location> substrate = Cuboid.getArea(loc, 4); // Создаём подложку
+            List<Location> substrate = getArea(loc, 4); // Создаём подложку
 
-            substrate.parallelStream() // Ставим рандомные блоки
+            substrate.parallelStream() // Ставим подложку
                     .map(l -> (Runnable) () -> l.getBlock().setType(Material.NETHERRACK))
                     .forEach(run -> Bukkit.getScheduler().runTask(Main.inst, run));
 
-            substrate.parallelStream() // Убираем рандомные блоки
-                    .map(l -> (Runnable) () -> l.getBlock().setType(Material.AIR, true))
-                    .filter(run -> (random.nextInt(100) + 1) <= 15)
-                    .forEach(run -> Bukkit.getScheduler().runTask(Main.inst, run));
+            // Ставим рандомные блоки
+            setRandomBlocks(substrate, Material.AIR, 13);
+            setRandomBlocks(substrate, Material.MAGMA_BLOCK, 10);
+            setRandomBlocks(substrate, Material.BLACKSTONE, 8);
+            setRandomBlocks(substrate, Material.NETHER_WART_BLOCK, 5);
 
             Bukkit.getScheduler().runTask(Main.inst, () -> loc.getBlock().setType(Material.RESPAWN_ANCHOR)); // Ставим на локацию якорь возрождения
 
@@ -151,6 +150,13 @@ public class CargoSpawner {
         });
     }
 
+    private static void setRandomBlocks(List<Location> substrate, Material block, int chance) {
+        substrate.parallelStream()
+                .map(l -> (Runnable) () -> l.getBlock().setType(block, true))
+                .filter(run -> (random.nextInt(100) + 1) <= chance)
+                .forEach(run -> Bukkit.getScheduler().runTask(Main.inst, run));
+    }
+
     private static void laterTaskAsync(long time, TimeUnit unit, Runnable task) {
         try {
             Thread.sleep(unit.toMillis(time));
@@ -167,32 +173,27 @@ public class CargoSpawner {
         Bukkit.getScheduler().runTask(Main.inst, task);
     }
 
-    public static class Cuboid {
-        @Getter private final List<Location> blocks = new ArrayList<>();
+    public static List<Location> getArea(Location loc, int radius) {
+        Location loc1 = loc.getBlock().getRelative(BlockFace.NORTH_WEST, radius).getLocation(); // Первая точка
+        Location loc2 = loc.getBlock().getRelative(BlockFace.SOUTH_EAST, radius).getLocation(); // Вторая точка
 
-        public Cuboid(Location location1, Location location2) {
-            World world = location1.getWorld();
+        List<Location> blocks = new ArrayList<>();
+        World world = loc1.getWorld();
 
-            int maxX = (Math.max(location1.getBlockX(), location2.getBlockX()));
-            int minX = (Math.min(location1.getBlockX(), location2.getBlockX()));
+        int maxX = (Math.max(loc1.getBlockX(), loc2.getBlockX()));
+        int minX = (Math.min(loc1.getBlockX(), loc2.getBlockX()));
 
-            int maxY = (Math.max(location1.getBlockY(), location2.getBlockY()));
-            int minY = (Math.min(location1.getBlockY(), location2.getBlockY()));
+        int maxY = (Math.max(loc1.getBlockY(), loc2.getBlockY()));
+        int minY = (Math.min(loc1.getBlockY(), loc2.getBlockY()));
 
-            int maxZ = (Math.max(location1.getBlockZ(), location2.getBlockZ()));
-            int minZ = (Math.min(location1.getBlockZ(), location2.getBlockZ()));
+        int maxZ = (Math.max(loc1.getBlockZ(), loc2.getBlockZ()));
+        int minZ = (Math.min(loc1.getBlockZ(), loc2.getBlockZ()));
 
-            for (int x = minX; x <= maxX; x++)
-                for (int z = minZ; z <= maxZ; z++)
-                    for (int y = minY; y <= maxY; y++)
-                        blocks.add(new Location(world, x, y, z));
-        }
+        for (int x = minX; x <= maxX; x++)
+            for (int z = minZ; z <= maxZ; z++)
+                for (int y = minY; y <= maxY; y++)
+                    blocks.add(new Location(world, x, y, z));
 
-        public static List<Location> getArea(Location loc, int radius) {
-            Location loc1 = loc.getBlock().getRelative(BlockFace.NORTH_WEST, radius).getLocation(); // Первая точка
-            Location loc2 = loc.getBlock().getRelative(BlockFace.SOUTH_EAST, radius).getLocation(); // Вторая точка
-
-            return new Cuboid(loc1, loc2).getBlocks();
-        }
+        return blocks;
     }
 }

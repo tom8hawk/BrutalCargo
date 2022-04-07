@@ -15,6 +15,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.plugin.java.JavaPlugin;
+import ru.baronessdev.personal.brutalcargo.config.Cargos;
 import ru.baronessdev.personal.brutalcargo.config.Config;
 import ru.baronessdev.personal.brutalcargo.config.Database;
 import ru.baronessdev.personal.brutalcargo.config.Messages;
@@ -41,6 +42,8 @@ public final class Main extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        Cargos.deleteAll();
+
         new Config();
         new Messages();
         new Database();
@@ -114,10 +117,11 @@ public final class Main extends JavaPlugin {
             public void onInteract(PlayerInteractEvent e) {
                 if (e.hasBlock())
                     CargoManager.getByLocation(e.getClickedBlock().getLocation())
-                            .map(CargoManager::getContent)
                             .ifPresent(cargo -> {
                                 e.setCancelled(true);
-                                cargo.open(e.getPlayer());
+
+                                if (cargo.getContent() != null)
+                                    cargo.getContent().open(e.getPlayer());
                             });
             }
 
@@ -138,10 +142,6 @@ public final class Main extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        CargoManager.getCargos().forEach(rg -> {
-            rg.getLocation().getBlock().setType(Material.AIR);
-
-            rg.delete();
-        });
+        Cargos.save();
     }
 }

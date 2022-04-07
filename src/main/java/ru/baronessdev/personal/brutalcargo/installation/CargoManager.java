@@ -6,11 +6,12 @@ import org.bukkit.Location;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
 
 public class CargoManager {
     @Getter private static final List<CargoManager> cargos = new ArrayList<>();
     @Getter private final Location location;
+
+    @Getter private String regionName;
 
     @Getter private RegionManager regionManager;
     @Getter private ContentManager content;
@@ -28,12 +29,9 @@ public class CargoManager {
 
     public void createRegion() {
         regionManager = new RegionManager(this);
+        regionManager.create().join();
 
-        try {
-            regionManager.create().get();
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
-        }
+        regionName = regionManager.getRegion().getName();
     }
 
     public void delete() {
