@@ -1,13 +1,10 @@
+no-permissions: У вас нет права на это!
 reload: 'BrutalCargo | Успешно перезагружен'
 
 menu-title: Настройки BrutalCargo
 cargo-title: 'BrutalWorld | Груз'
 
-not-player: Эту команду могут выполнять только игроки
-no-permissions: У вас нет права на это!
-
 left-time-message: 'Груз появится через %time'
-
 open-message: 'Груз был открыт игроком &e%player'
 item-name: '&cДо открытия груза: &e%time секунд'
 

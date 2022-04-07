@@ -52,8 +52,8 @@ public final class Main extends JavaPlugin {
         inventoryManager.init();
 
         getCommand("cargo").setExecutor((CommandSender sender, org.bukkit.command.Command command, String label, String[] args) -> {
-            if (args.length >= 1) {
-                if (sender.hasPermission("cargo.admin")) {
+            if (sender.hasPermission("cargo.admin")) {
+                if (args.length >= 1) {
                     if (args[0].equalsIgnoreCase("reload")) {
                         new Config();
                         new Messages();
@@ -72,21 +72,23 @@ public final class Main extends JavaPlugin {
                                 CargoSpawner.spawn(world);
                         }
                     }
+                } else if (sender instanceof Player) {
+                    Player player = (Player) sender;
+
+                    Database.readInventory()
+                            .thenApplyAsync(inv -> {
+                                try {
+                                    return Bukkit.getScheduler().callSyncMethod(this, () -> player.openInventory(inv)).get();
+                                } catch (InterruptedException | ExecutionException e) {
+                                    e.printStackTrace();
+                                }
+
+                                return null;
+                            })
+                            .thenAcceptAsync(view -> views.put(view.getPlayer(), view));
                 }
-            } else if (sender instanceof Player) {
-                Player player = (Player) sender;
-
-                Database.readInventory()
-                        .thenApplyAsync(inv -> {
-                            try {
-                                return Bukkit.getScheduler().callSyncMethod(this, () -> player.openInventory(inv)).get();
-                            } catch (InterruptedException | ExecutionException e) {
-                                e.printStackTrace();
-                            }
-
-                            return null;
-                        })
-                        .thenAcceptAsync(view -> views.put(view.getPlayer(), view));
+            } else {
+                sender.sendMessage(Config.inst.getMessage("no-permissions"));
             }
 
             return true;
