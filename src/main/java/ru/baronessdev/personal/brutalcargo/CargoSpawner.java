@@ -86,8 +86,8 @@ public class CargoSpawner {
 
             while (true) {
                 temp = new Location(world,
-                        random.ints(mins.get(0), 2000).findFirst().orElse(random.nextInt(2000)), 1,
-                        random.ints(mins.get(1), 2000).findFirst().orElse(random.nextInt(2000))); // Получаем рандомные координаты
+                        random.ints(mins.get(0), 3000).findFirst().orElse(random.nextInt(3000)), 1,
+                        random.ints(mins.get(1), 3000).findFirst().orElse(random.nextInt(3000))); // Получаем рандомные координаты
                 highest = temp.getWorld().getHighestBlockAt(temp).getY(); // Получаем высоту первого нормального блока на этих координатах
 
                 if (highest > 10 && getArea(temp, 60).parallelStream().noneMatch(l -> ru.baronessdev.personal.brutalprotect.region.Region.getByLocation(l).isPresent()))
