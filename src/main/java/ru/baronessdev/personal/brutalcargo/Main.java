@@ -15,7 +15,6 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.plugin.java.JavaPlugin;
-import ru.baronessdev.personal.brutalcargo.config.Cargos;
 import ru.baronessdev.personal.brutalcargo.config.Config;
 import ru.baronessdev.personal.brutalcargo.config.Database;
 import ru.baronessdev.personal.brutalcargo.config.Messages;
@@ -42,8 +41,6 @@ public final class Main extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        Cargos.deleteAll();
-
         new Config();
         new Messages();
         new Database();
@@ -143,7 +140,5 @@ public final class Main extends JavaPlugin {
     }
 
     @Override
-    public void onDisable() {
-        Cargos.save();
-    }
+    public void onDisable() { }
 }

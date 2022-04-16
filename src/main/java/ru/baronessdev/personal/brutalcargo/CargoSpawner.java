@@ -35,6 +35,8 @@ public class CargoSpawner {
                     .filter(world -> configWorlds.contains(world.getName().toLowerCase()))
                     .forEach(queue::add);
 
+            String leftTime = Messages.inst.getMessage("left-time-message");
+
             if (!queue.isEmpty()) {
                 while (true) {
                     Collections.shuffle(queue);
@@ -52,8 +54,7 @@ public class CargoSpawner {
                             e.printStackTrace();
                         }
 
-                        String message = Messages.inst.getMessage("left-time-message")
-                                .replace("%time", WordDeclensionUtil.HOURS.getWordInDeclension(hours));
+                        String message = leftTime.replace("%time", WordDeclensionUtil.HOURS.getWordInDeclension(hours));
 
                         getPlayers(ignoredWorlds).parallelStream().forEach(p -> p.sendMessage(message));
                         hours -= 1;
@@ -78,7 +79,6 @@ public class CargoSpawner {
 
             int highest;
             Location temp;
-            int border = (int) world.getWorldBorder().getSize() / 2; // Получаем координаты границ в каждую сторону
 
             List<Integer> mins = Arrays.stream(Config.inst.getMessage(worldName + ".min-cords").split(" "))
                     .map(Integer::valueOf)
@@ -86,8 +86,8 @@ public class CargoSpawner {
 
             while (true) {
                 temp = new Location(world,
-                        random.ints(mins.get(0), border).findFirst().orElse(random.nextInt(border)), 1,
-                        random.ints(mins.get(1), border).findFirst().orElse(random.nextInt(border))); // Получаем рандомные координаты
+                        random.ints(mins.get(0), 2000).findFirst().orElse(random.nextInt(2000)), 1,
+                        random.ints(mins.get(1), 2000).findFirst().orElse(random.nextInt(2000))); // Получаем рандомные координаты
                 highest = temp.getWorld().getHighestBlockAt(temp).getY(); // Получаем высоту первого нормального блока на этих координатах
 
                 if (highest > 10 && getArea(temp, 60).parallelStream().noneMatch(l -> ru.baronessdev.personal.brutalprotect.region.Region.getByLocation(l).isPresent()))
@@ -106,10 +106,14 @@ public class CargoSpawner {
                     .forEach(run -> Bukkit.getScheduler().runTask(Main.inst, run));
 
             // Ставим рандомные блоки
-            setRandomBlocks(substrate, Material.AIR, 13);
+            setRandomBlocks(substrate, Material.SOUL_SAND, 13);
             setRandomBlocks(substrate, Material.MAGMA_BLOCK, 10);
             setRandomBlocks(substrate, Material.BLACKSTONE, 8);
             setRandomBlocks(substrate, Material.NETHER_WART_BLOCK, 5);
+
+            getArea(loc.clone().add(0, 1, 0), 5).parallelStream() // Убираем блоки над грузом
+                    .map(l -> (Runnable) () -> l.getBlock().setType(Material.AIR))
+                    .forEach(run -> Bukkit.getScheduler().runTask(Main.inst, run));
 
             Bukkit.getScheduler().runTask(Main.inst, () -> loc.getBlock().setType(Material.RESPAWN_ANCHOR)); // Ставим на локацию якорь возрождения
 
