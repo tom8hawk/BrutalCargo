@@ -21,9 +21,10 @@ import ru.baronessdev.personal.brutalcargo.config.Database;
 import ru.baronessdev.personal.brutalcargo.config.Messages;
 
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-import static ru.baronessdev.personal.brutalcargo.Main.executor;
 import static ru.baronessdev.personal.brutalcargo.Main.getPlayers;
 
 public class ContentManager implements InventoryProvider {
@@ -31,6 +32,8 @@ public class ContentManager implements InventoryProvider {
     
     @Getter private final CargoManager cargo;
     @Getter private final Location location;
+
+    private final ExecutorService executor = Executors.newCachedThreadPool();
 
     private Inventory content;
     private SmartInventory inventory;
@@ -59,7 +62,30 @@ public class ContentManager implements InventoryProvider {
 
                 Database.readInventory()
                         .thenApplyAsync(res -> getRandomItems(res.getContents()))
-                        .thenAcceptAsync(content::setContents);
+                        .thenAcceptAsync(content::setContents)
+                        .join();
+
+                while (true) {
+                    if (content.isEmpty() || location.getBlock().getType() == Material.AIR) {
+
+                        Bukkit.getScheduler().runTask(Main.inst, () -> {
+                            location.getBlock().setType(Material.AIR);
+
+                            Main.inventoryManager.getOpenedPlayers(inventory).forEach(Player::closeInventory);
+                            content.getViewers().forEach(HumanEntity::closeInventory);
+                        });
+
+                        cargo.delete();
+                        executor.shutdownNow();
+                        return;
+                    }
+
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException ignored) {
+                        return;
+                    }
+                }
             });
 
             while (secs > 0) {
@@ -68,34 +94,14 @@ public class ContentManager implements InventoryProvider {
 
                 try {
                     Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
+                } catch (InterruptedException ignored) {
+                    return;
                 }
             }
             
             opened = true;
             Player opener = openers.getFirst();
             Bukkit.getScheduler().runTask(Main.inst, () -> openers.forEach(this::open));
-
-            executor.execute(() -> {
-                while (true) {
-                    if (content.isEmpty()) {
-                        Bukkit.getScheduler().runTask(Main.inst, () -> {
-                            location.getBlock().setType(Material.AIR);
-                            content.getViewers().forEach(HumanEntity::closeInventory);
-                        });
-
-                        cargo.delete();
-                        return;
-                    }
-
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            });
 
             String openMessage = Messages.inst.getMessage("open-message")
                     .replace("%player", opener.getDisplayName());
@@ -134,7 +140,7 @@ public class ContentManager implements InventoryProvider {
             }
         });
 
-        return contents.toArray(ItemStack[]::new);
+        return contents.toArray(new ItemStack[0]);
     }
 
     public void open(Player player) {

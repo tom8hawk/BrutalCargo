@@ -9,4 +9,4 @@ open-message: 'Груз был открыт игроком &e%player'
 item-name: '&cДо открытия груза: &e%time секунд'
 
 time-message:
-  - 'В &e%worldе &fчерез &e%time &fна координатах &e%coordinates &Fпоявится груз'
+  - 'В &e%world &fчерез &e%time &fна координатах &e%coordinates &Fпоявится груз'
