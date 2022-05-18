@@ -59,11 +59,7 @@ public class ContentManager implements InventoryProvider {
 
             executor.execute(() -> {
                 content = Bukkit.createInventory(null, 27, cargoTitle);
-
-                Database.readInventory()
-                        .thenApplyAsync(res -> getRandomItems(res.getContents()))
-                        .thenAcceptAsync(content::setContents)
-                        .join();
+                content.setContents(getRandomItems(Database.readInventory().getContents()));
 
                 while (true) {
                     if (content.isEmpty() || location.getBlock().getType() == Material.AIR) {
@@ -75,7 +71,7 @@ public class ContentManager implements InventoryProvider {
                             content.getViewers().forEach(HumanEntity::closeInventory);
                         });
 
-                        cargo.delete();
+                        cargo.delete(true);
                         executor.shutdownNow();
                         return;
                     }

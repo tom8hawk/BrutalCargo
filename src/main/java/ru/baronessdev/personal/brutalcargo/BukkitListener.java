@@ -1,18 +1,15 @@
-package ru.baronessdev.personal.brutalcargo.listener;
+package ru.baronessdev.personal.brutalcargo;
 
 import lombok.Getter;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.InventoryView;
-import ru.baronessdev.personal.brutalcargo.Main;
 import ru.baronessdev.personal.brutalcargo.config.Database;
 import ru.baronessdev.personal.brutalcargo.installation.CargoManager;
 import ru.baronessdev.personal.brutalcargo.installation.RegionManager;
@@ -24,22 +21,10 @@ public class BukkitListener implements Listener {
     @Getter private static final Map<HumanEntity, InventoryView> views = new HashMap<>();
 
     @EventHandler
-    public void onExplode(EntityExplodeEvent e) {
-        Explosion.getByTnt(e.getEntity()).ifPresent(ex -> ex.getExplodedBlocks().addAll(e.blockList()));
-    }
-
-    @EventHandler
     public void onClose(InventoryCloseEvent e) {
         if (views.containsKey(e.getPlayer())) {
             Database.saveInventory(e.getInventory());
-
             views.remove(e.getPlayer());
-        } else if (e.getInventory().getLocation() != null && e.getInventory().isEmpty()) {
-            CargoManager.getByLocation(e.getInventory().getLocation()).ifPresent(rg -> {
-                e.getInventory().getLocation().getBlock().setType(Material.AIR);
-
-                rg.delete();
-            });
         }
     }
 

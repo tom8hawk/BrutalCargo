@@ -3,6 +3,8 @@ version: '${project.version}'
 main: ru.baronessdev.personal.brutalcargo.Main
 api-version: 1.16
 depend: [ BrutalProtect ]
+libraries:
+  - 'fr.minuskube.inv:smart-invs:1.2.7'
 
 commands:
   cargo:

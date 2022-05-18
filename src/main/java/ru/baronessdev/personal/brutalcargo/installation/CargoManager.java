@@ -1,8 +1,10 @@
 package ru.baronessdev.personal.brutalcargo.installation;
 
 import lombok.Getter;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.block.BlockState;
+import ru.baronessdev.personal.brutalcargo.Main;
+import ru.baronessdev.personal.brutalcargo.reflection.BlockData;
 import ru.baronessdev.personal.brutalprotect.region.Region;
 
 import java.util.ArrayList;
@@ -11,12 +13,10 @@ import java.util.Optional;
 
 public class CargoManager {
     @Getter private static final List<CargoManager> cargos = new ArrayList<>();
+    @Getter private final BlockData creationData;
 
     @Getter private final Location location;
     @Getter private ContentManager content;
-
-    @Getter private final BlockState creationState;
-    @Getter private final List<BlockState> explodedBlocksStates = new ArrayList<>();
 
     @Getter private String regionName;
     @Getter private RegionManager regionManager;
@@ -24,7 +24,7 @@ public class CargoManager {
 
     public CargoManager(Location location) {
         this.location = location;
-        this.creationState = location.getBlock().getState();
+        this.creationData = new BlockData(location.getBlock());
 
         cargos.add(this);
     }
@@ -39,7 +39,12 @@ public class CargoManager {
         regionName = region.getName();
     }
 
-    public void delete() {
+    public void delete(boolean registerTasks) {
+        if (registerTasks)
+            Bukkit.getScheduler().runTask(Main.inst, () -> creationData.setBlock(location.getBlock()));
+        else
+            creationData.setBlock(location.getBlock());
+
         regionManager.getRegion().remove();
         cargos.remove(this);
     }

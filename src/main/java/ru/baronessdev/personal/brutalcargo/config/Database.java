@@ -1,67 +1,45 @@
 package ru.baronessdev.personal.brutalcargo.config;
 
+import me.lucko.helper.serialize.GsonStorageHandler;
 import org.bukkit.Bukkit;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.util.io.BukkitObjectInputStream;
-import org.bukkit.util.io.BukkitObjectOutputStream;
 import ru.baronessdev.personal.brutalcargo.Main;
 
-import java.io.*;
-import java.util.concurrent.CompletableFuture;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 
-public class Database {
-    private static String data;
+public class Database extends GsonStorageHandler<ItemStack[]> {
+    private static Database inst;
+    private static final Path path = Path.of(Main.inst.getDataFolder().getPath() + "/data.json");
 
     public Database() {
-        File file = new File(Main.inst.getDataFolder() + "/data.dat");
+        super("data", ".json", Main.inst.getDataFolder(), ItemStack[].class);
 
-        if (!file.exists())
-            Main.inst.saveResource("data.dat", false);
+        inst = this;
+        File file = path.toFile();
 
-        data = file.getAbsolutePath();
+        if (!file.exists()) {
+            try {
+                file.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public static void saveInventory(Inventory inventory) {
-        CompletableFuture.runAsync(() -> {
-            try {
-                FileOutputStream fout = new FileOutputStream(data);
-                BukkitObjectOutputStream dataOutput = new BukkitObjectOutputStream(fout);
-
-                dataOutput.writeObject(inventory.getContents());
-
-                dataOutput.close();
-                fout.close();
-            } catch (Exception e) {
-                throw new IllegalStateException("Unable to save item stacks.", e);
-            }
-        });
+        inst.saveToFile(path, inventory.getContents());
     }
 
-    public static CompletableFuture<Inventory> readInventory() {
-        return CompletableFuture.supplyAsync(() -> {
-            Inventory inventory = Bukkit.getServer().createInventory(null, 54, Messages.inst.getMessage("menu-title"));
+    public static Inventory readInventory() {
+        Inventory inventory = Bukkit.getServer().createInventory(null, 54, Messages.inst.getMessage("menu-title"));
+        ItemStack[] items = inst.readFromFile(path);
 
-            try {
-                FileInputStream inputStream = new FileInputStream(data);
-                BukkitObjectInputStream dataInput = new BukkitObjectInputStream(inputStream);
+        if (items != null)
+            inventory.setContents(items);
 
-                try {
-                    Object object = dataInput.readObject();
-
-                    if (object != null)
-                        inventory.setContents((ItemStack[]) object);
-                } catch (EOFException ignored) {
-                    throw new RuntimeException("Вы не задали возможное содержимое груза или настроили неправильно!");
-                }
-
-                dataInput.close();
-                inputStream.close();
-            } catch (IOException | ClassNotFoundException e) {
-                e.printStackTrace();
-            }
-
-            return inventory;
-        });
+        return inventory;
     }
 }

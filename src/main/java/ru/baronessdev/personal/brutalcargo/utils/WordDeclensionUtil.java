@@ -1,4 +1,4 @@
-package ru.baronessdev.personal.brutalcargo;
+package ru.baronessdev.personal.brutalcargo.utils;
 
 public enum WordDeclensionUtil {
     HOURS(new String[] { "час", "часа", "часов" }),
