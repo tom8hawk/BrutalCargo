@@ -8,9 +8,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.plugin.java.JavaPlugin;
-import ru.baronessdev.personal.brutalcargo.config.Config;
-import ru.baronessdev.personal.brutalcargo.config.Database;
-import ru.baronessdev.personal.brutalcargo.config.Messages;
+import ru.baronessdev.personal.brutalcargo.data.Config;
+import ru.baronessdev.personal.brutalcargo.data.Database;
+import ru.baronessdev.personal.brutalcargo.data.Messages;
 import ru.baronessdev.personal.brutalcargo.installation.CargoManager;
 
 import java.util.ArrayList;
@@ -35,7 +35,7 @@ public final class Main extends JavaPlugin {
     public void onEnable() {
         new Config();
         new Messages();
-        new Database();
+        Database.init();
 
         inventoryManager = new InventoryManager(this);
         inventoryManager.init();
@@ -47,7 +47,7 @@ public final class Main extends JavaPlugin {
                         if (args[0].equalsIgnoreCase("reload")) {
                             new Config();
                             new Messages();
-                            new Database();
+                            Database.init();
 
                             sender.sendMessage(Messages.inst.getMessage("reload"));
                         } else if (args[0].equalsIgnoreCase("spawn")) {

@@ -1,17 +1,16 @@
-package ru.baronessdev.personal.brutalcargo.config;
+package ru.baronessdev.personal.brutalcargo.data;
 
 import org.bukkit.ChatColor;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public final class Config extends YAML {
-    public static Config inst;
+public class Messages extends YAML {
+    public static Messages inst;
 
-    public Config() {
-        Initialize("config.yml");
+    public Messages() {
+        Initialize("messages.yml");
         inst = this;
     }
 
@@ -22,14 +21,6 @@ public final class Config extends YAML {
 
     public List<String> getList(String path) {
         return configuration.getStringList(path).stream().map(line -> ChatColor.translateAlternateColorCodes('&', line)).collect(Collectors.toList());
-    }
-
-    public int getInt(String path) {
-        return configuration.getInt(path);
-    }
-
-    public List<String> getKeys() {
-        return new ArrayList<>(configuration.getKeys(false));
     }
 
     @Override

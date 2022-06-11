@@ -17,8 +17,8 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import ru.baronessdev.personal.brutalcargo.Main;
-import ru.baronessdev.personal.brutalcargo.config.Database;
-import ru.baronessdev.personal.brutalcargo.config.Messages;
+import ru.baronessdev.personal.brutalcargo.data.Database;
+import ru.baronessdev.personal.brutalcargo.data.Messages;
 
 import java.util.*;
 import java.util.concurrent.ExecutorService;

@@ -1,13 +1,13 @@
 package ru.baronessdev.personal.brutalcargo.utils;
 
 public enum WordDeclensionUtil {
-    HOURS(new String[] { "час", "часа", "часов" }),
-    MINUTES(new String[] { "минуту", "минуты", "минут" }),
-    SECONDS(new String[] { "секунду", "секунды", "секунд" });
+    HOURS("час", "часа", "часов"),
+    MINUTES("минуту", "минуты", "минут" ),
+    SECONDS("секунду", "секунды", "секунд");
 
     private final String[] declensions;
 
-    WordDeclensionUtil(String[] declensions) {
+    WordDeclensionUtil(String... declensions) {
         this.declensions = declensions;
     }
 

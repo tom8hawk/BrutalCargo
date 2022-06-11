@@ -1,4 +1,4 @@
-package ru.baronessdev.personal.brutalcargo.config;
+package ru.baronessdev.personal.brutalcargo.data;
 
 import org.bukkit.configuration.file.YamlConfiguration;
 import ru.baronessdev.personal.brutalcargo.Main;

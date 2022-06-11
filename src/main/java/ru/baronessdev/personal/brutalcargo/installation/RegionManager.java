@@ -6,7 +6,6 @@ import org.bukkit.entity.Player;
 import ru.baronessdev.personal.brutalprotect.region.Region;
 
 import java.util.ArrayList;
-import java.util.Objects;
 
 import static ru.baronessdev.personal.brutalcargo.Main.executor;
 
@@ -21,12 +20,16 @@ public class RegionManager {
 
     public static void addToAll(Player player) {
         executor.execute(() ->
-                new ArrayList<>(CargoManager.getCargos()).stream()
-                        .map(CargoManager::getRegionManager)
-                        .filter(Objects::nonNull)
-                        .map(RegionManager::getRegion)
-                        .filter(rg -> !rg.isPlayerInRegion(player))
-                        .forEach(rg -> rg.addMember(player))
+                new ArrayList<>(CargoManager.getCargos()).forEach(cargo -> {
+                    RegionManager manager = cargo.getRegionManager();
+
+                    if (manager != null) {
+                        Region region = manager.getRegion();
+
+                        if (!region.isPlayerInRegion(player))
+                            region.addMember(player);
+                    }
+                })
         );
     }
 }

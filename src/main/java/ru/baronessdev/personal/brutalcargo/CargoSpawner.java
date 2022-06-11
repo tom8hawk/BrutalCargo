@@ -4,17 +4,23 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
-import ru.baronessdev.personal.brutalcargo.config.Config;
-import ru.baronessdev.personal.brutalcargo.config.Messages;
+import org.bukkit.block.Block;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.TNTPrimed;
+import ru.baronessdev.personal.brutalcargo.data.Config;
+import ru.baronessdev.personal.brutalcargo.data.Messages;
 import ru.baronessdev.personal.brutalcargo.installation.CargoManager;
-import ru.baronessdev.personal.brutalcargo.utils.Hemisphere;
-import ru.baronessdev.personal.brutalcargo.utils.WordDeclensionUtil;
+import ru.baronessdev.personal.brutalcargo.listener.Explosion;
 import ru.baronessdev.personal.brutalprotect.region.Region;
 import ru.baronessdev.personal.brutalprotect.selection.Selection;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static ru.baronessdev.personal.brutalcargo.Main.executor;
 import static ru.baronessdev.personal.brutalcargo.Main.getPlayers;
@@ -26,7 +32,7 @@ public class CargoSpawner {
         executor.execute(() -> {
             List<World> queue = new ArrayList<>();
 
-            List<String> configWorlds = Config.inst.getKeys().parallelStream()
+            List<String> configWorlds = Config.inst.getKeys().stream()
                     .map(String::toLowerCase)
                     .collect(Collectors.toList());
 
@@ -95,7 +101,7 @@ public class CargoSpawner {
                 temp.setY(highest);
                 Region tempRegion = Selection.setBlock(null, temp, 60).get();
 
-                if (regions.parallelStream().noneMatch(rg -> rg.isRegionConcernsRegion(tempRegion))) {
+                if (regions.stream().noneMatch(rg -> rg.isRegionConcernsRegion(tempRegion))) {
                     cargoManager = new CargoManager(temp);
                     cargoManager.setRegion(tempRegion);
 
@@ -109,75 +115,82 @@ public class CargoSpawner {
         Location loc = temp.clone();
         Bukkit.getScheduler().runTask(Main.inst, () -> loc.getBlock().setType(Material.RESPAWN_ANCHOR)); // Ставим на локацию якорь возрождения
 
-        List<String> message = Messages.inst.getList("time-message"); // Получаем сообщение todo
-        String coordinates = loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ(); //todo
+        List<String> message = Messages.inst.getList("time-message"); // Получаем сообщение
+        String coordinates = loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ(); // Преобразуем X Y Z координаты в строку
 
-        message.parallelStream() //todo
-            .map(line -> line.replace("%world", cargoName).replace("%time", "-1").replace("%coordinates", coordinates))
-            .forEach(line -> Bukkit.getOnlinePlayers().parallelStream().forEach(player -> player.sendMessage(line)));
-        List<String> ignoredWorlds = Config.inst.getList(worldName + ".ignored-worlds"); //todo
+        List<String> ignoredWorlds = Config.inst.getList(worldName + ".ignored-worlds"); // Получаем игнорируемые для сообщений миры
+        AtomicInteger minutesTime = new AtomicInteger(10); // Получаем минуты кд
 
-//        List<String> message = Messages.inst.getList("time-message"); // Получаем сообщение
-//        String coordinates = loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ(); // Преобразуем X Y Z координаты в строку
-//
-//        List<String> ignoredWorlds = Config.inst.getList(worldName + ".ignored-worlds"); // Получаем игнорируемые для сообщений миры
-//        AtomicInteger minutesTime = new AtomicInteger(10); // Получаем минуты кд
-//
-//        IntStream.of(0, 5, 4).forEach(t -> sleepAndCompleteTask(t, TimeUnit.MINUTES, () -> { // Запускаем сообщения по кд
-//            String time =  WordDeclensionUtil.MINUTES.getWordInDeclension(minutesTime.addAndGet(-t));
-//            List<Player> players = getPlayers(ignoredWorlds);
-//
-//            message.parallelStream()
-//                    .map(line -> line.replace("%world", cargoName).replace("%time", time).replace("%coordinates", coordinates))
-//                    .forEach(line -> players.parallelStream().forEach(player -> player.sendMessage(line)));
-//        }));
-//
-//        AtomicInteger secondsTime = new AtomicInteger(60); // Получаем секунды кд
-//
-//        IntStream.of(30, 15, 5, 5, 1, 1, 1, 1).forEach(t -> sleepAndCompleteTask(t, TimeUnit.SECONDS, () -> { // Запускаем сообщения по кд
-//            String time = WordDeclensionUtil.SECONDS.getWordInDeclension(secondsTime.addAndGet(-t));
-//            List<Player> players = getPlayers(ignoredWorlds);
-//
-//            message.parallelStream()
-//                    .map(line -> line.replace("%world", cargoName).replace("%time", time).replace("%coordinates", coordinates))
-//                    .forEach(line -> players.parallelStream().forEach(player -> player.sendMessage(line)));
-//        }));
+        IntStream.of(0, 5, 4).forEach(t -> sleepAndCompleteTask(t, TimeUnit.MINUTES, () -> { // Запускаем сообщения по кд
+            String time =  WordDeclensionUtil.MINUTES.getWordInDeclension(minutesTime.addAndGet(-t));
+            List<Player> players = getPlayers(ignoredWorlds);
 
-        List<Location> hemisphere = Hemisphere.generate(loc, 2, true); // Получаем полусферу
+            message.stream()
+                    .map(line -> line.replace("%world", cargoName).replace("%time", time).replace("%coordinates", coordinates))
+                    .forEach(line -> players.parallelStream().forEach(player -> player.sendMessage(line)));
+        }));
+
+        AtomicInteger secondsTime = new AtomicInteger(60); // Получаем секунды кд
+
+        IntStream.of(30, 15, 5, 5, 1, 1, 1, 1).forEach(t -> sleepAndCompleteTask(t, TimeUnit.SECONDS, () -> { // Запускаем сообщения по кд
+            String time = WordDeclensionUtil.SECONDS.getWordInDeclension(secondsTime.addAndGet(-t));
+            List<Player> players = getPlayers(ignoredWorlds);
+
+            message.stream()
+                    .map(line -> line.replace("%world", cargoName).replace("%time", time).replace("%coordinates", coordinates))
+                    .forEach(line -> players.parallelStream().forEach(player -> player.sendMessage(line)));
+        }));
+
+        Bukkit.getScheduler().runTask(Main.inst, () -> loc.getBlock().setType(Material.AIR)); // Убираем якорь возрождения
+        AtomicReference<Explosion> explosion = new AtomicReference<>();
+
+        Bukkit.getScheduler().runTask(Main.inst, () -> { // Взрываем ТНТ
+            TNTPrimed tnt = (TNTPrimed) loc.getWorld().spawnEntity(loc, EntityType.PRIMED_TNT);
+            tnt.setFuseTicks(1);
+
+            explosion.set(new Explosion(tnt));
+        });
+
+        while (true) // Ожидаем взрыв
+            if (explosion.get() != null && !explosion.get().getExplodedBlocks().isEmpty())
+                break;
+
+        try {
+            Thread.sleep(50);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        explosion.get().getExplodedBlocks().stream() // Получаем BlockState взорванных блоков
+                .map(Block::getState)
+                .forEach(cargoManager.getExplodedBlocksStates()::add);
+
+        List<Location> substrate = explosion.get().getExplodedBlocks().stream() // Получаем взорванные блоки
+                .map(Block::getLocation)
+                .collect(Collectors.toList());
 
         // Ставим рандомные блоки
-        setRandomBlocks(hemisphere, Material.SOUL_SAND, 50);
-        setRandomBlocks(hemisphere, Material.SOUL_SOIL, 45);
-        setRandomBlocks(hemisphere, Material.MAGMA_BLOCK, 60);
-        setRandomBlocks(hemisphere, Material.BLACKSTONE, 55);
-        setRandomBlocks(hemisphere, Material.NETHER_WART_BLOCK, 75);
-        setRandomBlocks(hemisphere, Material.NETHERRACK, 100);
-
-        loc.add(0, -4, 0); // Создаем новую локацию
-        CargoManager newManager = new CargoManager(loc);
-
-        newManager.setRegion(cargoManager.getRegionManager().getRegion()); // Ставим новый регион
-        cargoManager.delete(true); // Удаляем старый
+        setRandomBlocks(substrate, Material.SOUL_SAND, 13);
+        setRandomBlocks(substrate, Material.MAGMA_BLOCK, 10);
+        setRandomBlocks(substrate, Material.BLACKSTONE, 8);
+        setRandomBlocks(substrate, Material.NETHER_WART_BLOCK, 5);
 
         Bukkit.getScheduler().runTask(Main.inst, () -> loc.getBlock().setType(Material.RED_SHULKER_BOX));
-        newManager.createContent(ignoredWorlds); // Наполняем шалкер вещами
+        cargoManager.createContent(ignoredWorlds); // Наполняем шалкер вещами
 
         sleepAndCompleteTask(15, TimeUnit.MINUTES, () -> Bukkit.getScheduler().runTask(Main.inst, () ->
                 loc.getBlock().setType(Material.AIR))); // Убираем шалкер
+
+        cargoManager.getExplodedBlocksStates().stream()
+                .map(state -> (Runnable) () -> state.update(true, true))
+                .forEach(task -> Bukkit.getScheduler().runTask(Main.inst, task));
     }
 
     private static void setRandomBlocks(List<Location> substrate, Material block, int chance) {
-        if (chance == 100)
-            new ArrayList<>(substrate).stream()
-                    .peek(substrate::remove)
-                    .map(l -> (Runnable) () -> l.getBlock().setType(block, true))
-                    .forEach(task -> Bukkit.getScheduler().runTask(Main.inst, task));
-        else
-            new ArrayList<>(substrate).stream()
-                    .filter(run -> (random.nextInt(100) + 1) <= chance)
-                    .peek(substrate::remove)
-                    .map(l -> (Runnable) () -> l.getBlock().setType(block, true))
-                    .forEach(task -> Bukkit.getScheduler().runTask(Main.inst, task));
+        substrate.parallelStream()
+                .map(l -> (Runnable) () -> l.getBlock().setType(block, true))
+                .filter(run -> (random.nextInt(100) + 1) <= chance)
+                .forEach(run -> Bukkit.getScheduler().runTask(Main.inst, run));
     }
 
     private static void sleepAndCompleteTask(long time, TimeUnit unit, Runnable task) {
