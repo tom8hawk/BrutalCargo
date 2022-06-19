@@ -1,4 +1,4 @@
-package ru.baronessdev.personal.brutalcargo.utils;
+package ru.baronessdev.personal.brutalcargo;
 
 public enum WordDeclensionUtil {
     HOURS("час", "часа", "часов"),

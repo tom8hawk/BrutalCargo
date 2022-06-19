@@ -4,8 +4,6 @@ import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import ru.baronessdev.personal.brutalcargo.Main;
-import ru.baronessdev.personal.brutalcargo.reflection.BlockData;
-import ru.baronessdev.personal.brutalprotect.region.Region;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,19 +11,16 @@ import java.util.Optional;
 
 public class CargoManager {
     @Getter private static final List<CargoManager> cargos = new ArrayList<>();
-    @Getter private final BlockData creationData;
-
     @Getter private final Location location;
-    @Getter private ContentManager content;
 
     @Getter private String regionName;
+
     @Getter private RegionManager regionManager;
+    @Getter private ContentManager content;
 
 
     public CargoManager(Location location) {
         this.location = location;
-        this.creationData = new BlockData(location.getBlock());
-
         cargos.add(this);
     }
 
