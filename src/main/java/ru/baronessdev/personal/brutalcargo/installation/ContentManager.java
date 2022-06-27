@@ -17,8 +17,8 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import ru.baronessdev.personal.brutalcargo.Main;
-import ru.baronessdev.personal.brutalcargo.data.Database;
-import ru.baronessdev.personal.brutalcargo.data.Messages;
+import ru.baronessdev.personal.brutalcargo.config.Database;
+import ru.baronessdev.personal.brutalcargo.config.Messages;
 
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -57,9 +57,9 @@ public class ContentManager implements InventoryProvider {
                     .listener(new InventoryListener(InventoryCloseEvent.class, o -> openers.remove((Player) ((InventoryCloseEvent) o).getPlayer())))
                     .build();
 
-            executor.execute(() -> {
-                content = Bukkit.createInventory(null, 27, cargoTitle);
-                content.setContents(getRandomItems(Database.readInventory().getContents()));
+            content = Bukkit.createInventory(null, 27, cargoTitle);
+            Database.readInventory().thenAcceptAsync(res -> {
+                content.setContents(getRandomItems(res.getContents()));
 
                 while (true) {
                     if (content.isEmpty() || location.getBlock().getType() == Material.AIR) {
@@ -71,7 +71,7 @@ public class ContentManager implements InventoryProvider {
                             content.getViewers().forEach(HumanEntity::closeInventory);
                         });
 
-                        cargo.delete(true);
+                        cargo.delete();
                         executor.shutdownNow();
                         return;
                     }

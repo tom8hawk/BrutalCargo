@@ -1,5 +1,6 @@
 package ru.baronessdev.personal.brutalcargo;
 
+import io.papermc.lib.PaperLib;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -8,16 +9,20 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TNTPrimed;
-import ru.baronessdev.personal.brutalcargo.data.Config;
-import ru.baronessdev.personal.brutalcargo.data.Messages;
+import ru.baronessdev.personal.brutalcargo.config.Config;
+import ru.baronessdev.personal.brutalcargo.config.Messages;
 import ru.baronessdev.personal.brutalcargo.installation.CargoManager;
 import ru.baronessdev.personal.brutalcargo.listener.Explosion;
 import ru.baronessdev.personal.brutalprotect.region.Region;
 import ru.baronessdev.personal.brutalprotect.selection.Selection;
 
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -27,6 +32,11 @@ import static ru.baronessdev.personal.brutalcargo.Main.getPlayers;
 
 public class CargoSpawner {
     private static final Random random = new Random();
+    private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
+
+    private CargoSpawner() {
+        throw new IllegalStateException("Utility class");
+    }
 
     public static void schedule() {
         executor.execute(() -> {
@@ -50,28 +60,18 @@ public class CargoSpawner {
                     List<String> ignoredWorlds = Config.inst.getList(world.getName() + ".ignored-worlds");
 
                     int time = Config.inst.getInt(world.getName() + ".cooldown");
-                    long hours = TimeUnit.MINUTES.toHours(time);
+                    AtomicLong hours = new AtomicLong(TimeUnit.MINUTES.toHours(time));
 
-                    while (hours > 0) {
-                        try {
-                            Thread.sleep(3600000);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
+                    while (hours.get() > 0) {
+                        runTaskLater(1, TimeUnit.HOURS, () -> {
+                            String message = leftTime.replace("%time", WordDeclensionUtil.HOURS.getWordInDeclension(hours.get()));
+                            getPlayers(ignoredWorlds).parallelStream().forEach(p -> p.sendMessage(message));
 
-                        String message = leftTime.replace("%time", WordDeclensionUtil.HOURS.getWordInDeclension(hours));
-
-                        getPlayers(ignoredWorlds).parallelStream().forEach(p -> p.sendMessage(message));
-                        hours -= 1;
+                            hours.addAndGet(-1);
+                        });
                     }
 
-                    try {
-                        Thread.sleep(3600000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-
-                    CargoSpawner.spawn(world);
+                    runTaskLater(1, TimeUnit.HOURS, () -> CargoSpawner.spawn(world));
                 }
             }
         });
@@ -94,7 +94,8 @@ public class CargoSpawner {
         List<Region> regions = new ArrayList<>(Region.getRegions());
 
         while (true) {
-            temp = new Location(world, random(first, 5000), 70, random(second, 5000)); // Получаем рандомные координаты
+            temp = new Location(world, randomCoords(first), 70, randomCoords(second)); // Получаем рандомные координаты
+            PaperLib.getChunkAtAsync(temp, true).join();
             int highest = temp.getWorld().getHighestBlockAt(temp).getY(); // Получаем высоту первого нормального блока на этих координатах
 
             if (highest > 2) {
@@ -121,7 +122,7 @@ public class CargoSpawner {
         List<String> ignoredWorlds = Config.inst.getList(worldName + ".ignored-worlds"); // Получаем игнорируемые для сообщений миры
         AtomicInteger minutesTime = new AtomicInteger(10); // Получаем минуты кд
 
-        IntStream.of(0, 5, 4).forEach(t -> sleepAndCompleteTask(t, TimeUnit.MINUTES, () -> { // Запускаем сообщения по кд
+        IntStream.of(0, 5, 4).forEach(t -> runTaskLater(t, TimeUnit.MINUTES, () -> { // Запускаем сообщения по кд
             String time =  WordDeclensionUtil.MINUTES.getWordInDeclension(minutesTime.addAndGet(-t));
             List<Player> players = getPlayers(ignoredWorlds);
 
@@ -132,7 +133,7 @@ public class CargoSpawner {
 
         AtomicInteger secondsTime = new AtomicInteger(60); // Получаем секунды кд
 
-        IntStream.of(30, 15, 5, 5, 1, 1, 1, 1).forEach(t -> sleepAndCompleteTask(t, TimeUnit.SECONDS, () -> { // Запускаем сообщения по кд
+        IntStream.of(30, 15, 5, 5, 1, 1, 1, 1).forEach(t -> runTaskLater(t, TimeUnit.SECONDS, () -> { // Запускаем сообщения по кд
             String time = WordDeclensionUtil.SECONDS.getWordInDeclension(secondsTime.addAndGet(-t));
             List<Player> players = getPlayers(ignoredWorlds);
 
@@ -170,15 +171,17 @@ public class CargoSpawner {
                 .collect(Collectors.toList());
 
         // Ставим рандомные блоки
-        setRandomBlocks(substrate, Material.SOUL_SAND, 13);
-        setRandomBlocks(substrate, Material.MAGMA_BLOCK, 10);
-        setRandomBlocks(substrate, Material.BLACKSTONE, 8);
-        setRandomBlocks(substrate, Material.NETHER_WART_BLOCK, 5);
+        setBlocks(substrate, Material.NETHERRACK);
+        setBlocks(substrate, Material.SOUL_SAND, 60);
+        setBlocks(substrate, Material.MAGMA_BLOCK, 50);
+        setBlocks(substrate, Material.BLACKSTONE, 45);
+        setBlocks(substrate, Material.NETHER_WART_BLOCK, 30);
+        setBlocks(substrate, Material.AIR, 15);
 
         Bukkit.getScheduler().runTask(Main.inst, () -> loc.getBlock().setType(Material.RED_SHULKER_BOX));
         cargoManager.createContent(ignoredWorlds); // Наполняем шалкер вещами
 
-        sleepAndCompleteTask(15, TimeUnit.MINUTES, () -> Bukkit.getScheduler().runTask(Main.inst, () ->
+        runTaskLater(15, TimeUnit.MINUTES, () -> Bukkit.getScheduler().runTask(Main.inst, () ->
                 loc.getBlock().setType(Material.AIR))); // Убираем шалкер
 
         cargoManager.getExplodedBlocksStates().stream()
@@ -186,22 +189,33 @@ public class CargoSpawner {
                 .forEach(task -> Bukkit.getScheduler().runTask(Main.inst, task));
     }
 
-    private static void setRandomBlocks(List<Location> substrate, Material block, int chance) {
+    private static void setBlocks(List<Location> substrate, Material block, int chance) {
         substrate.parallelStream()
                 .map(l -> (Runnable) () -> l.getBlock().setType(block, true))
                 .filter(run -> (random.nextInt(100) + 1) <= chance)
                 .forEach(run -> Bukkit.getScheduler().runTask(Main.inst, run));
     }
 
-    private static void sleepAndCompleteTask(long time, TimeUnit unit, Runnable task) {
-        try {
-            Thread.sleep(unit.toMillis(time));
-        } catch (InterruptedException ignored) { }
-
-        Bukkit.getScheduler().runTask(Main.inst, task);
+    private static void setBlocks(List<Location> substrate, Material block) {
+        substrate.parallelStream()
+                .map(l -> (Runnable) () -> l.getBlock().setType(block, true))
+                .forEach(run -> Bukkit.getScheduler().runTask(Main.inst, run));
     }
 
-    public static int random(int min, int max) {
+    private static void runTaskLater(long time, TimeUnit unit, Runnable task) {
+        try {
+            scheduler.schedule(task, time, unit).get();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static int randomCoords(int first) {
+        int second = random.nextBoolean() ? 5000 : -5000;
+
+        int min = Math.min(first, second);
+        int max = Math.max(first, second);
+
         max -= min;
         return (int) (Math.random() * ++max) + min;
     }

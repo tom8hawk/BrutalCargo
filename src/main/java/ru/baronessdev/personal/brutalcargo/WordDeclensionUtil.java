@@ -3,7 +3,7 @@ package ru.baronessdev.personal.brutalcargo;
 public enum WordDeclensionUtil {
     HOURS("час", "часа", "часов"),
     MINUTES("минуту", "минуты", "минут" ),
-    SECONDS("секунду", "секунды", "секунд");
+    SECONDS("секунду", "секунды", "секунд" );
 
     private final String[] declensions;
 

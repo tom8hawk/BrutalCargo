@@ -13,7 +13,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.InventoryView;
 import ru.baronessdev.personal.brutalcargo.Main;
-import ru.baronessdev.personal.brutalcargo.data.Database;
+import ru.baronessdev.personal.brutalcargo.config.Database;
 import ru.baronessdev.personal.brutalcargo.installation.CargoManager;
 import ru.baronessdev.personal.brutalcargo.installation.RegionManager;
 

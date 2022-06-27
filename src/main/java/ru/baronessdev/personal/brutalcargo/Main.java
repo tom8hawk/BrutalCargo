@@ -1,17 +1,18 @@
 package ru.baronessdev.personal.brutalcargo;
 
 import fr.minuskube.inv.InventoryManager;
+import io.papermc.lib.PaperLib;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
+import org.bukkit.block.BlockState;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryView;
 import org.bukkit.plugin.java.JavaPlugin;
-import ru.baronessdev.personal.brutalcargo.data.Config;
-import ru.baronessdev.personal.brutalcargo.data.Database;
-import ru.baronessdev.personal.brutalcargo.data.Messages;
+import ru.baronessdev.personal.brutalcargo.config.Config;
+import ru.baronessdev.personal.brutalcargo.config.Database;
+import ru.baronessdev.personal.brutalcargo.config.Messages;
 import ru.baronessdev.personal.brutalcargo.installation.CargoManager;
+import ru.baronessdev.personal.brutalcargo.listener.BukkitListener;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,9 +34,11 @@ public final class Main extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        PaperLib.suggestPaper(this);
+
         new Config();
         new Messages();
-        Database.init();
+        new Database();
 
         inventoryManager = new InventoryManager(this);
         inventoryManager.init();
@@ -47,7 +50,7 @@ public final class Main extends JavaPlugin {
                         if (args[0].equalsIgnoreCase("reload")) {
                             new Config();
                             new Messages();
-                            Database.init();
+                            new Database();
 
                             sender.sendMessage(Messages.inst.getMessage("reload"));
                         } else if (args[0].equalsIgnoreCase("spawn")) {
@@ -64,14 +67,18 @@ public final class Main extends JavaPlugin {
                         }
                     } else if (sender instanceof Player) {
                         Player player = (Player) sender;
-                        Inventory inventory = Database.readInventory();
 
-                        try {
-                            InventoryView view = Bukkit.getScheduler().callSyncMethod(this, () -> player.openInventory(inventory)).get();
-                            BukkitListener.getViews().put(view.getPlayer(), view);
-                        } catch (InterruptedException | ExecutionException e) {
-                            e.printStackTrace();
-                        }
+                        Database.readInventory()
+                                .thenApplyAsync(inv -> {
+                                    try {
+                                        return Bukkit.getScheduler().callSyncMethod(this, () -> player.openInventory(inv)).get();
+                                    } catch (InterruptedException | ExecutionException e) {
+                                        e.printStackTrace();
+                                    }
+
+                                    return null;
+                                })
+                                .thenAcceptAsync(view -> BukkitListener.getViews().put(view.getPlayer(), view));
                     }
                 } else {
                     sender.sendMessage(Config.inst.getMessage("no-permissions"));
@@ -95,6 +102,12 @@ public final class Main extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        new ArrayList<>(CargoManager.getCargos()).forEach(manager -> manager.delete(false));
+        new ArrayList<>(CargoManager.getCargos()).forEach(manager -> {
+            List<BlockState> blockStates = new ArrayList<>(manager.getExplodedBlocksStates());
+            blockStates.add(manager.getCreationState());
+
+            blockStates.forEach(state -> state.update(true, true));
+            manager.delete();
+        });
     }
 }
