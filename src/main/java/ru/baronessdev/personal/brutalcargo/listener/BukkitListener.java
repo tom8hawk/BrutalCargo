@@ -17,11 +17,11 @@ import ru.baronessdev.personal.brutalcargo.config.Database;
 import ru.baronessdev.personal.brutalcargo.installation.CargoManager;
 import ru.baronessdev.personal.brutalcargo.installation.RegionManager;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class BukkitListener implements Listener {
-    @Getter private static final Map<HumanEntity, InventoryView> views = new HashMap<>();
+    @Getter private static final Map<HumanEntity, InventoryView> views = new ConcurrentHashMap<>();
 
     @EventHandler
     public void onExplode(EntityExplodeEvent e) {

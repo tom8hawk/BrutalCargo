@@ -5,13 +5,13 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.TNTPrimed;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Explosion {
-    private static final List<Explosion> explosions = new ArrayList<>();
-    @Getter private final List<Block> explodedBlocks = new ArrayList<>();
+    private static final List<Explosion> explosions = new CopyOnWriteArrayList<>();
+    @Getter private final List<Block> explodedBlocks = new CopyOnWriteArrayList<>();
     private final TNTPrimed tnt;
 
     public Explosion(TNTPrimed tnt) {
