@@ -8,5 +8,8 @@ left-time-message: 'Груз появится через %time'
 open-message: 'Груз был открыт игроком &e%player'
 item-name: '&cДо открытия груза: &e%time секунд'
 
+world-not-exists: '&cТакого мира не существует!'
+not-supported-world: '&cВы не можете заспавнить груз в этом мире!'
+
 time-message:
   - 'В &e%world &fчерез &e%time &fна координатах &e%coordinates &Fпоявится груз'

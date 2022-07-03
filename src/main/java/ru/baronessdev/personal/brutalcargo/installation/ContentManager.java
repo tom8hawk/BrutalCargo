@@ -21,19 +21,17 @@ import ru.baronessdev.personal.brutalcargo.config.Database;
 import ru.baronessdev.personal.brutalcargo.config.Messages;
 
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
+import static ru.baronessdev.personal.brutalcargo.Main.executor;
 import static ru.baronessdev.personal.brutalcargo.Main.getPlayers;
 
 public class ContentManager implements InventoryProvider {
-    private final LinkedList<Player> openers = new LinkedList<>();
+    private final List<Player> openers = new CopyOnWriteArrayList<>();
     
     @Getter private final CargoManager cargo;
     @Getter private final Location location;
-
-    private final ExecutorService executor = Executors.newCachedThreadPool();
 
     private Inventory content;
     private SmartInventory inventory;
@@ -58,35 +56,13 @@ public class ContentManager implements InventoryProvider {
                     .build();
 
             content = Bukkit.createInventory(null, 27, cargoTitle);
-            Database.readInventory().thenAcceptAsync(res -> {
-                content.setContents(getRandomItems(res.getContents()));
-
-                while (true) {
-                    if (content.isEmpty() || location.getBlock().getType() == Material.AIR) {
-
-                        Bukkit.getScheduler().runTask(Main.inst, () -> {
-                            location.getBlock().setType(Material.AIR);
-
-                            Main.inventoryManager.getOpenedPlayers(inventory).forEach(Player::closeInventory);
-                            content.getViewers().forEach(HumanEntity::closeInventory);
-                        });
-
-                        cargo.delete();
-                        executor.shutdownNow();
-                        return;
-                    }
-
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException ignored) {
-                        return;
-                    }
-                }
-            });
+            Database.readInventory().thenAcceptAsync(res -> content.setContents(getRandomItems(res.getContents())), executor);
 
             while (secs > 0) {
                 if (!openers.isEmpty())
                     secs--;
+                else if (location.getBlock().getType() == Material.AIR)
+                    delete();
 
                 try {
                     Thread.sleep(1000);
@@ -96,7 +72,8 @@ public class ContentManager implements InventoryProvider {
             }
             
             opened = true;
-            Player opener = openers.getFirst();
+
+            Player opener = openers.get(0);
             Bukkit.getScheduler().runTask(Main.inst, () -> openers.forEach(this::open));
 
             String openMessage = Messages.inst.getMessage("open-message")
@@ -104,7 +81,29 @@ public class ContentManager implements InventoryProvider {
 
             getPlayers(ignoredWorlds).parallelStream()
                     .forEach(p -> p.sendMessage(openMessage));
+
+            while (location.getBlock().getType() != Material.AIR && !content.isEmpty()) {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            delete();
         });
+    }
+
+    private void delete() {
+        Bukkit.getScheduler().runTask(Main.inst, () -> {
+            if (location.getBlock().getType() != Material.AIR)
+                location.getBlock().setType(Material.AIR);
+
+            openers.stream().filter(Player::isOnline).forEach(Player::closeInventory);
+            content.getViewers().forEach(HumanEntity::closeInventory);
+        });
+
+        cargo.delete();
     }
 
     private static ItemStack[] getRandomItems(ItemStack[] elements) {
@@ -140,12 +139,12 @@ public class ContentManager implements InventoryProvider {
     }
 
     public void open(Player player) {
-        if (opened) {
+        if (opened)
             player.openInventory(content);
-        } else {
+        else
             inventory.open(player);
-            openers.add(player);
-        }
+
+        openers.add(player);
     }
 
     @Override

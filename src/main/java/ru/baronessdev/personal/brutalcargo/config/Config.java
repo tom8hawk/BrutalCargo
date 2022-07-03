@@ -28,6 +28,10 @@ public final class Config extends YAML {
         return configuration.getInt(path);
     }
 
+    public boolean contains(String path) {
+        return configuration.contains(path);
+    }
+
     public List<String> getKeys() {
         return new ArrayList<>(configuration.getKeys(false));
     }

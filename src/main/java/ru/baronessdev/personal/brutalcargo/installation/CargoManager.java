@@ -1,11 +1,12 @@
 package ru.baronessdev.personal.brutalcargo.installation;
 
 import lombok.Getter;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.block.BlockState;
+import org.bukkit.Material;
+import ru.baronessdev.personal.brutalcargo.Main;
 import ru.baronessdev.personal.brutalprotect.region.Region;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -16,16 +17,13 @@ public class CargoManager {
     @Getter private final Location location;
     @Getter private ContentManager content;
 
-    @Getter private final BlockState creationState;
-    @Getter private final List<BlockState> explodedBlocksStates = new CopyOnWriteArrayList<>();
+    @Getter private final List<Location> explodedBlocks = new CopyOnWriteArrayList<>();
 
     @Getter private String regionName;
     @Getter private RegionManager regionManager;
 
     public CargoManager(Location location) {
         this.location = location;
-        this.creationState = location.getBlock().getState();
-
         cargos.add(this);
     }
 
@@ -42,6 +40,14 @@ public class CargoManager {
     public void delete() {
         regionManager.getRegion().remove();
         cargos.remove(this);
+
+        if (!Bukkit.isPrimaryThread()) {
+            getExplodedBlocks().stream()
+                    .map(loc -> (Runnable) () -> loc.getBlock().setType(Material.AIR))
+                    .forEach(task -> Bukkit.getScheduler().runTask(Main.inst, task));
+        } else {
+            getExplodedBlocks().forEach(loc -> loc.getBlock().setType(Material.AIR));
+        }
     }
 
     public static Optional<CargoManager> getByLocation(Location location) {

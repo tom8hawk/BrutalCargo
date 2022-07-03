@@ -4,7 +4,6 @@ import fr.minuskube.inv.InventoryManager;
 import io.papermc.lib.PaperLib;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
-import org.bukkit.block.BlockState;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -14,7 +13,6 @@ import ru.baronessdev.personal.brutalcargo.config.Messages;
 import ru.baronessdev.personal.brutalcargo.installation.CargoManager;
 import ru.baronessdev.personal.brutalcargo.listener.BukkitListener;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -54,31 +52,36 @@ public final class Main extends JavaPlugin {
 
                             sender.sendMessage(Messages.inst.getMessage("reload"));
                         } else if (args[0].equalsIgnoreCase("spawn")) {
-                            if (sender instanceof Player) {
+                            World world = null;
+
+                            if (args.length > 1) {
+                                world = getServer().getWorld(args[1]);
+
+                                if (world == null) {
+                                    sender.sendMessage(Config.inst.getMessage("world-not-exists"));
+                                    return;
+                                }
+                            } else if (sender instanceof Player) {
                                 Player player = (Player) sender;
-
-                                CargoSpawner.spawn(player.getWorld());
-                            } else if (args.length > 1) {
-                                World world = getServer().getWorld(args[1]);
-
-                                if (world != null)
-                                    CargoSpawner.spawn(world);
+                                world = player.getWorld();
                             }
+
+                            if (Config.inst.contains(world.getName()))
+                                CargoSpawner.spawn(world);
+                            else
+                                sender.sendMessage(Config.inst.getMessage("not-supported-world"));
                         }
                     } else if (sender instanceof Player) {
                         Player player = (Player) sender;
 
-                        Database.readInventory()
-                                .thenApplyAsync(inv -> {
-                                    try {
-                                        return Bukkit.getScheduler().callSyncMethod(this, () -> player.openInventory(inv)).get();
-                                    } catch (InterruptedException | ExecutionException e) {
-                                        e.printStackTrace();
-                                    }
-
-                                    return null;
-                                })
-                                .thenAcceptAsync(view -> BukkitListener.getViews().put(view.getPlayer(), view));
+                        Database.readInventory().thenAcceptAsync(inv -> {
+                            try {
+                                BukkitListener.getViews().put(player, Bukkit.getScheduler()
+                                        .callSyncMethod(this, () -> player.openInventory(inv)).get());
+                            } catch (InterruptedException | ExecutionException e) {
+                                e.printStackTrace();
+                            }
+                        }, executor);
                     }
                 } else {
                     sender.sendMessage(Config.inst.getMessage("no-permissions"));
@@ -102,11 +105,8 @@ public final class Main extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        new ArrayList<>(CargoManager.getCargos()).forEach(manager -> {
-            List<BlockState> blockStates = new ArrayList<>(manager.getExplodedBlocksStates());
-            blockStates.add(manager.getCreationState());
-
-            blockStates.forEach(state -> state.update(true, true));
+        CargoManager.getCargos().forEach(manager -> {
+            manager.getExplodedBlocks().add(manager.getLocation());
             manager.delete();
         });
     }

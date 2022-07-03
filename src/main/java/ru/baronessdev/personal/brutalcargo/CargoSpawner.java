@@ -1,6 +1,7 @@
 package ru.baronessdev.personal.brutalcargo;
 
 import io.papermc.lib.PaperLib;
+import lombok.SneakyThrows;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -102,7 +103,8 @@ public class CargoSpawner {
                 temp.setY(highest);
                 Region tempRegion = Selection.setBlock(null, temp, 60).get();
 
-                if (regions.stream().noneMatch(rg -> rg.isRegionConcernsRegion(tempRegion))) {
+                if (temp.getBlock().getType() != Material.WATER && temp.getBlock().getType() != Material.LAVA &&
+                        regions.stream().noneMatch(rg -> rg.isRegionConcernsRegion(tempRegion))) {
                     cargoManager = new CargoManager(temp);
                     cargoManager.setRegion(tempRegion);
 
@@ -142,57 +144,59 @@ public class CargoSpawner {
                     .forEach(line -> players.parallelStream().forEach(player -> player.sendMessage(line)));
         }));
 
-        Bukkit.getScheduler().runTask(Main.inst, () -> loc.getBlock().setType(Material.AIR)); // Убираем якорь возрождения
-        AtomicReference<Explosion> explosion = new AtomicReference<>();
+        AtomicReference<Explosion> explosionRes = new AtomicReference<>();
 
-        Bukkit.getScheduler().runTask(Main.inst, () -> { // Взрываем ТНТ
+        // Взрываем ТНТ
+        Bukkit.getScheduler().runTask(Main.inst, () -> {
+            loc.getBlock().setType(Material.AIR);
+            loc.clone().add(0, -1, 0).getBlock().setType(Material.DIRT);
+
             TNTPrimed tnt = (TNTPrimed) loc.getWorld().spawnEntity(loc, EntityType.PRIMED_TNT);
             tnt.setFuseTicks(1);
 
-            explosion.set(new Explosion(tnt));
+            explosionRes.set(new Explosion(loc));
         });
 
-        while (true) // Ожидаем взрыв
-            if (explosion.get() != null && !explosion.get().getExplodedBlocks().isEmpty())
-                break;
+        while (explosionRes.get() == null); // Ожидаем взрыв
+        Explosion explosion = explosionRes.get();
 
         try {
-            Thread.sleep(50);
+            Thread.sleep(750);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
 
-        explosion.get().getExplodedBlocks().stream() // Получаем BlockState взорванных блоков
-                .map(Block::getState)
-                .forEach(cargoManager.getExplodedBlocksStates()::add);
-
-        List<Location> substrate = explosion.get().getExplodedBlocks().stream() // Получаем взорванные блоки
+        List<Location> substrate = explosion.getExplodedBlocks().stream() // Получаем взорванные блоки
                 .map(Block::getLocation)
                 .collect(Collectors.toList());
 
+        explosion.delete();
+        cargoManager.getExplodedBlocks().addAll(substrate);
+
         // Ставим рандомные блоки
+        setBlocks(substrate, Material.SOUL_SAND, 30);
+        setBlocks(substrate, Material.MAGMA_BLOCK, 25);
+        setBlocks(substrate, Material.BLACKSTONE, 20);
+        setBlocks(substrate, Material.NETHER_WART_BLOCK, 15);
+        setBlocks(substrate, Material.AIR, 10);
         setBlocks(substrate, Material.NETHERRACK);
-        setBlocks(substrate, Material.SOUL_SAND, 60);
-        setBlocks(substrate, Material.MAGMA_BLOCK, 50);
-        setBlocks(substrate, Material.BLACKSTONE, 45);
-        setBlocks(substrate, Material.NETHER_WART_BLOCK, 30);
-        setBlocks(substrate, Material.AIR, 15);
 
         Bukkit.getScheduler().runTask(Main.inst, () -> loc.getBlock().setType(Material.RED_SHULKER_BOX));
         cargoManager.createContent(ignoredWorlds); // Наполняем шалкер вещами
 
         runTaskLater(15, TimeUnit.MINUTES, () -> Bukkit.getScheduler().runTask(Main.inst, () ->
                 loc.getBlock().setType(Material.AIR))); // Убираем шалкер
-
-        cargoManager.getExplodedBlocksStates().stream()
-                .map(state -> (Runnable) () -> state.update(true, true))
-                .forEach(task -> Bukkit.getScheduler().runTask(Main.inst, task));
     }
 
     private static void setBlocks(List<Location> substrate, Material block, int chance) {
-        substrate.parallelStream()
-                .map(l -> (Runnable) () -> l.getBlock().setType(block, true))
+        List<Location> toDelete = substrate.stream()
                 .filter(run -> (random.nextInt(100) + 1) <= chance)
+                .collect(Collectors.toList());
+
+        substrate.removeAll(toDelete);
+
+        toDelete.stream()
+                .map(l -> (Runnable) () -> l.getBlock().setType(block, true))
                 .forEach(run -> Bukkit.getScheduler().runTask(Main.inst, run));
     }
 

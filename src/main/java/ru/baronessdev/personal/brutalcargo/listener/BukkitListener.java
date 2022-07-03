@@ -25,21 +25,14 @@ public class BukkitListener implements Listener {
 
     @EventHandler
     public void onExplode(EntityExplodeEvent e) {
-        Explosion.getByTnt(e.getEntity()).ifPresent(ex -> ex.getExplodedBlocks().addAll(e.blockList()));
+        Explosion.getByTnt(e.getLocation()).ifPresent(ex -> ex.getExplodedBlocks().addAll(e.blockList()));
     }
 
     @EventHandler
     public void onClose(InventoryCloseEvent e) {
         if (views.containsKey(e.getPlayer())) {
             Database.saveInventory(e.getInventory());
-
             views.remove(e.getPlayer());
-        } else if (e.getInventory().getLocation() != null && e.getInventory().isEmpty()) {
-            CargoManager.getByLocation(e.getInventory().getLocation()).ifPresent(rg -> {
-                e.getInventory().getLocation().getBlock().setType(Material.AIR);
-
-                rg.delete();
-            });
         }
     }
 
