@@ -6,6 +6,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.plugin.java.JavaPlugin;
 import ru.baronessdev.personal.brutalcargo.config.Config;
 import ru.baronessdev.personal.brutalcargo.config.Database;
@@ -73,15 +74,14 @@ public final class Main extends JavaPlugin {
                         }
                     } else if (sender instanceof Player) {
                         Player player = (Player) sender;
+                        Inventory inventory = Database.readInventory();
 
-                        Database.readInventory().thenAcceptAsync(inv -> {
-                            try {
-                                BukkitListener.getViews().put(player, Bukkit.getScheduler()
-                                        .callSyncMethod(this, () -> player.openInventory(inv)).get());
-                            } catch (InterruptedException | ExecutionException e) {
-                                e.printStackTrace();
-                            }
-                        }, executor);
+                        try {
+                            BukkitListener.getViews().put(player, Bukkit.getScheduler()
+                                    .callSyncMethod(this, () -> player.openInventory(inventory)).get());
+                        } catch (InterruptedException | ExecutionException e) {
+                            e.printStackTrace();
+                        }
                     }
                 } else {
                     sender.sendMessage(Config.inst.getMessage("no-permissions"));

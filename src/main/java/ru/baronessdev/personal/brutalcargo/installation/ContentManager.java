@@ -56,13 +56,17 @@ public class ContentManager implements InventoryProvider {
                     .build();
 
             content = Bukkit.createInventory(null, 27, cargoTitle);
-            Database.readInventory().thenAcceptAsync(res -> content.setContents(getRandomItems(res.getContents())), executor);
+            content.setContents(getRandomItems(Database.readInventory().getContents()));
 
             while (secs > 0) {
+
                 if (!openers.isEmpty())
                     secs--;
-                else if (location.getBlock().getType() == Material.AIR)
+
+                if (location.getBlock().getType() == Material.AIR) {
                     delete();
+                    return;
+                }
 
                 try {
                     Thread.sleep(1000);

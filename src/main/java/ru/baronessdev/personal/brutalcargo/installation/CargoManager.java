@@ -7,17 +7,18 @@ import org.bukkit.Material;
 import ru.baronessdev.personal.brutalcargo.Main;
 import ru.baronessdev.personal.brutalprotect.region.Region;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 public class CargoManager {
-    @Getter private static final List<CargoManager> cargos = new CopyOnWriteArrayList<>();
+    @Getter private static final List<CargoManager> cargos = Collections.synchronizedList(new ArrayList<>());
 
     @Getter private final Location location;
     @Getter private ContentManager content;
 
-    @Getter private final List<Location> explodedBlocks = new CopyOnWriteArrayList<>();
+    @Getter private final List<Location> explodedBlocks = Collections.synchronizedList(new ArrayList<>());
 
     @Getter private String regionName;
     @Getter private RegionManager regionManager;

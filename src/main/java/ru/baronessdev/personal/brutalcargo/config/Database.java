@@ -42,17 +42,15 @@ public final class Database extends YAML {
         }
     }
 
-    public static CompletableFuture<Inventory> readInventory() {
-        return CompletableFuture.supplyAsync(() -> {
-            Inventory inventory = Bukkit.getServer().createInventory(null, 54, Messages.inst.getMessage("menu-title"));
+    public static Inventory readInventory() {
+        Inventory inventory = Bukkit.getServer().createInventory(null, 54, Messages.inst.getMessage("menu-title"));
 
-            if (inst.configuration.contains("contents"))
-                inst.configuration.getMapList("contents").stream()
-                        .map(map -> map.entrySet().stream().collect(Collectors.toMap(k -> (String) k.getKey(), v -> (Object) v.getValue())))
-                        .forEach(map -> inventory.setItem((int) map.get("slot"), ItemStack.deserialize(map)));
+        if (inst.configuration.contains("contents"))
+            inst.configuration.getMapList("contents").stream()
+                    .map(map -> map.entrySet().stream().collect(Collectors.toMap(k -> (String) k.getKey(), v -> (Object) v.getValue())))
+                    .forEach(map -> inventory.setItem((int) map.get("slot"), ItemStack.deserialize(map)));
 
-            return inventory;
-        });
+        return inventory;
     }
 
     @Override
