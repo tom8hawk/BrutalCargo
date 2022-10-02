@@ -42,13 +42,13 @@ public class CargoManager {
         regionManager.getRegion().remove();
         cargos.remove(this);
 
-        if (!Bukkit.isPrimaryThread()) {
-            getExplodedBlocks().stream()
-                    .map(loc -> (Runnable) () -> loc.getBlock().setType(Material.AIR))
-                    .forEach(task -> Bukkit.getScheduler().runTask(Main.inst, task));
-        } else {
-            getExplodedBlocks().forEach(loc -> loc.getBlock().setType(Material.AIR));
-        }
+        // При отключении сервера нельзя планировать задачи
+        if (Bukkit.isPrimaryThread()) returnToAir();
+        else Bukkit.getScheduler().runTask(Main.inst, this::returnToAir);
+    }
+
+    private void returnToAir() {
+        getExplodedBlocks().forEach(l -> l.getBlock().setType(Material.AIR));
     }
 
     public static Optional<CargoManager> getByLocation(Location location) {
