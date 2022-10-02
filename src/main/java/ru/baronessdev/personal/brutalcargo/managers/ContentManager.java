@@ -35,6 +35,7 @@ public class ContentManager implements InventoryProvider {
 
     private Inventory content;
     private SmartInventory inventory;
+
     private int secs = 30;
     private boolean opened;
 
@@ -59,7 +60,6 @@ public class ContentManager implements InventoryProvider {
             content.setContents(getRandomItems(Database.readInventory().getContents()));
 
             while (secs > 0) {
-
                 if (!openers.isEmpty())
                     secs--;
 
@@ -90,7 +90,7 @@ public class ContentManager implements InventoryProvider {
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    return;
                 }
             }
 
@@ -132,9 +132,15 @@ public class ContentManager implements InventoryProvider {
 
                 if (!results.contains(loc)) {
                     contents.set(loc, item);
-
                     results.add(loc);
+
                     return;
+                }
+
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
         });
@@ -161,7 +167,7 @@ public class ContentManager implements InventoryProvider {
         inventoryContents.fill(ClickableItem.empty(getItem()));
     }
 
-    public ItemStack getItem() {
+    private ItemStack getItem() {
         ItemStack item = new ItemStack(Material.RED_STAINED_GLASS_PANE);
         ItemMeta meta = item.getItemMeta();
 

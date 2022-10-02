@@ -115,13 +115,15 @@ public class CargoSpawner {
         }
 
         Location loc = temp.clone();
+
         Bukkit.getScheduler().runTask(Main.inst, () -> loc.getBlock().setType(Material.RESPAWN_ANCHOR)); // Ставим на локацию якорь возрождения
-
         List<String> message = Messages.inst.getList("time-message"); // Получаем сообщение
-        String coordinates = loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ(); // Преобразуем X Y Z координаты в строку
 
+        String coordinates = loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ(); // X Y Z в строку
         List<String> ignoredWorlds = Config.inst.getList(worldName + ".ignored-worlds"); // Получаем игнорируемые для сообщений миры
-        AtomicInteger minutesTime = new AtomicInteger(10); // Получаем минуты кд
+
+        AtomicInteger minutesTime = new AtomicInteger(10); // Минуты кд
+        AtomicInteger secondsTime = new AtomicInteger(60); // Секунды кд
 
         IntStream.of(0, 5, 4).forEach(t -> runTaskLater(t, TimeUnit.MINUTES, () -> { // Запускаем сообщения по кд
             String time =  WordDeclensionUtil.MINUTES.getWordInDeclension(minutesTime.addAndGet(-t));
@@ -131,8 +133,6 @@ public class CargoSpawner {
                     .map(line -> line.replace("%world", cargoName).replace("%time", time).replace("%coordinates", coordinates))
                     .forEach(line -> players.parallelStream().forEach(player -> player.sendMessage(line)));
         }));
-
-        AtomicInteger secondsTime = new AtomicInteger(60); // Получаем секунды кд
 
         IntStream.of(30, 15, 5, 5, 1, 1, 1, 1).forEach(t -> runTaskLater(t, TimeUnit.SECONDS, () -> { // Запускаем сообщения по кд
             String time = WordDeclensionUtil.SECONDS.getWordInDeclension(secondsTime.addAndGet(-t));
@@ -156,14 +156,15 @@ public class CargoSpawner {
             explosionRes.set(new Explosion(loc));
         });
 
-        while (explosionRes.get() == null); // Ожидаем взрыв
-        Explosion explosion = explosionRes.get();
+        Explosion explosion;
 
-        try {
-            Thread.sleep(750);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        do {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        } while ((explosion = explosionRes.get()) == null);
 
         List<Location> substrate = explosion.getExplodedBlocks().stream() // Получаем взорванные блоки
                 .map(Block::getLocation)
@@ -187,22 +188,18 @@ public class CargoSpawner {
                 loc.getBlock().setType(Material.AIR))); // Убираем шалкер
     }
 
-    private static void setBlocks(List<Location> substrate, Material block, int chance) {
-        List<Location> toDelete = substrate.stream()
+    private static void setBlocks(List<Location> allBlocks, Material block, int chance) {
+        List<Location> toDelete = allBlocks.stream()
                 .filter(run -> (random.nextInt(100) + 1) <= chance)
                 .collect(Collectors.toList());
 
-        substrate.removeAll(toDelete);
-
-        toDelete.stream()
-                .map(l -> (Runnable) () -> l.getBlock().setType(block, true))
-                .forEach(run -> Bukkit.getScheduler().runTask(Main.inst, run));
+        allBlocks.removeAll(toDelete);
+        setBlocks(toDelete, block);
     }
 
-    private static void setBlocks(List<Location> substrate, Material block) {
-        substrate.parallelStream()
-                .map(l -> (Runnable) () -> l.getBlock().setType(block, true))
-                .forEach(run -> Bukkit.getScheduler().runTask(Main.inst, run));
+    private static void setBlocks(List<Location> toSet, Material block) {
+        Bukkit.getScheduler().runTask(Main.inst, () ->
+                toSet.forEach(l -> l.getBlock().setType(block, true)));
     }
 
     private static void runTaskLater(long time, TimeUnit unit, Runnable task) {
