@@ -11,15 +11,14 @@ import org.bukkit.plugin.java.JavaPlugin;
 import ru.baronessdev.personal.brutalcargo.config.Config;
 import ru.baronessdev.personal.brutalcargo.config.Database;
 import ru.baronessdev.personal.brutalcargo.config.Messages;
-import ru.baronessdev.personal.brutalcargo.installation.CargoManager;
+import ru.baronessdev.personal.brutalcargo.managers.CargoManager;
 import ru.baronessdev.personal.brutalcargo.listener.BukkitListener;
 
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 
 public final class Main extends JavaPlugin {
     public static Main inst;
@@ -96,11 +95,14 @@ public final class Main extends JavaPlugin {
     }
 
     public static List<Player> getPlayers(List<String> ignoredWorlds) {
-        return Bukkit.getWorlds().stream()
+        List<Player> players = new ArrayList<>();
+
+        Bukkit.getWorlds().stream()
                 .filter(w -> !ignoredWorlds.contains(w.getName()))
                 .map(World::getPlayers)
-                .flatMap(Collection::stream)
-                .collect(Collectors.toList());
+                .forEach(players::addAll);
+
+        return players;
     }
 
     @Override

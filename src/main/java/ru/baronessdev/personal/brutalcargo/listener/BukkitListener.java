@@ -2,7 +2,6 @@ package ru.baronessdev.personal.brutalcargo.listener;
 
 import lombok.Getter;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -14,8 +13,8 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.InventoryView;
 import ru.baronessdev.personal.brutalcargo.Main;
 import ru.baronessdev.personal.brutalcargo.config.Database;
-import ru.baronessdev.personal.brutalcargo.installation.CargoManager;
-import ru.baronessdev.personal.brutalcargo.installation.RegionManager;
+import ru.baronessdev.personal.brutalcargo.managers.CargoManager;
+import ru.baronessdev.personal.brutalcargo.managers.RegionManager;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

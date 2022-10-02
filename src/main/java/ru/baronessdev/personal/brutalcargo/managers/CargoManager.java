@@ -1,4 +1,4 @@
-package ru.baronessdev.personal.brutalcargo.installation;
+package ru.baronessdev.personal.brutalcargo.managers;
 
 import lombok.Getter;
 import org.bukkit.Bukkit;

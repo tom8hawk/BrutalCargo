@@ -1,4 +1,4 @@
-package ru.baronessdev.personal.brutalcargo.installation;
+package ru.baronessdev.personal.brutalcargo.managers;
 
 import fr.minuskube.inv.ClickableItem;
 import fr.minuskube.inv.InventoryListener;

@@ -1,7 +1,6 @@
 package ru.baronessdev.personal.brutalcargo;
 
 import io.papermc.lib.PaperLib;
-import lombok.SneakyThrows;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -12,7 +11,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.TNTPrimed;
 import ru.baronessdev.personal.brutalcargo.config.Config;
 import ru.baronessdev.personal.brutalcargo.config.Messages;
-import ru.baronessdev.personal.brutalcargo.installation.CargoManager;
+import ru.baronessdev.personal.brutalcargo.managers.CargoManager;
 import ru.baronessdev.personal.brutalcargo.listener.Explosion;
 import ru.baronessdev.personal.brutalprotect.region.Region;
 import ru.baronessdev.personal.brutalprotect.selection.Selection;
